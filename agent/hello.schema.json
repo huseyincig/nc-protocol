@@ -1,0 +1,52 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "title": "NC agent hello",
+  "type": "object",
+  "properties": {
+    "type": {
+      "const": "hello"
+    },
+    "protocol_version": {
+      "type": "string",
+      "const": "1.0.0",
+      "description": "Must equal the agent protocol version exactly (major-gated)."
+    },
+    "client_id": {
+      "type": "string",
+      "pattern": "^nc_[0-9a-f]{64}$"
+    },
+    "client_version": {
+      "type": "string",
+      "minLength": 1
+    },
+    "host": {
+      "type": "object"
+    },
+    "capabilities": {
+      "type": "array",
+      "items": {
+        "type": "string"
+      }
+    },
+    "features": {
+      "type": "array",
+      "items": {
+        "type": "string"
+      }
+    },
+    "transport": {
+      "type": [
+        "object",
+        "null"
+      ]
+    }
+  },
+  "required": [
+    "type",
+    "protocol_version",
+    "client_id",
+    "client_version",
+    "host"
+  ],
+  "additionalProperties": true
+}

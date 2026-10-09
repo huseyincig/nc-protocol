@@ -1,0 +1,263 @@
+{
+  "_meta": {
+    "nodecommand.app/execution": {
+      "taskSupport": "forbidden"
+    }
+  },
+  "annotations": {
+    "destructiveHint": false,
+    "idempotentHint": true,
+    "openWorldHint": false,
+    "readOnlyHint": true,
+    "title": "Extract Document Text"
+  },
+  "description": "Extracts readable text from office documents on a client: DOCX word processing files, XLSX spreadsheets rendered as tab-separated rows, and text-based PDFs. Format is detected from file content with an optional explicit hint. Encrypted PDFs and unsupported containers fail loudly instead of returning empty text. Output is bounded by max_chars. Async: poll job_get with the returned job_id. No text in scanned PDFs. REQUIRED: 1. target DOCX/XLSX/text-PDF 2. extract. IF DOC_UNSUPPORTED_FORMAT: convert to DOCX. DO NOT expect OCR; scanned PDFs fail.",
+  "inputSchema": {
+    "$schema": "https://json-schema.org/draft/2020-12/schema",
+    "additionalProperties": false,
+    "properties": {
+      "client_id": {
+        "description": "Target NC client. Absolute routing handle, independent of any connection.",
+        "maxLength": 67,
+        "minLength": 67,
+        "pattern": "^nc_[0-9a-f]{64}$",
+        "type": "string",
+        "x-mcp-header": "Client-Id"
+      },
+      "format": {
+        "default": "auto",
+        "description": "Document format hint. auto detects from file content; an explicit hint still verifies magic bytes and fails loudly on mismatch.",
+        "enum": [
+          "auto",
+          "docx",
+          "xlsx",
+          "pdf"
+        ],
+        "type": "string"
+      },
+      "max_chars": {
+        "default": 65536,
+        "description": "Maximum extracted characters to return; longer output is truncated with truncated=true.",
+        "maximum": 65536,
+        "minimum": 1,
+        "type": "integer"
+      },
+      "path": {
+        "description": "Absolute path of the document to extract on the selected client.",
+        "maxLength": 4096,
+        "minLength": 1,
+        "type": "string"
+      }
+    },
+    "required": [
+      "client_id",
+      "path"
+    ],
+    "type": "object"
+  },
+  "name": "doc_extract",
+  "outputSchema": {
+    "$schema": "https://json-schema.org/draft/2020-12/schema",
+    "additionalProperties": false,
+    "properties": {
+      "client_id": {
+        "description": "Echo of the target host id (null when no host was targeted).",
+        "type": [
+          "string",
+          "null"
+        ]
+      },
+      "duration_ms": {
+        "description": "Execution time in milliseconds.",
+        "type": [
+          "integer",
+          "null"
+        ]
+      },
+      "error": {
+        "additionalProperties": false,
+        "description": "Structured failure detail. Present when status is failed.",
+        "properties": {
+          "category": {
+            "description": "Public error category for model branching. invalid_argument: Fix the input; do not retry the same call unchanged. authentication: Re-authenticate before retrying. authorization: Insufficient permission; do not retry or attempt to bypass. policy: Rejected by host policy; do not attempt to bypass. Adjust the request or ask an operator. not_found: Resource missing; re-discover the id/path/service/container before retrying. conflict: Conflicting state; re-read the current state, then decide. unsupported: Not supported here; do not retry. Look for an alternative tool or capability. timeout: Timed out; if retryable, wait, then poll with job_get. transient: Transient; retry with backoff if retryable. execution: Execution failure; inspect stdout/stderr/state before retrying. cancelled: Cancelled; do not blindly retry. internal: Internal error; if it reproduces, report it with nc_feedback.",
+            "enum": [
+              "invalid_argument",
+              "authentication",
+              "authorization",
+              "policy",
+              "not_found",
+              "conflict",
+              "unsupported",
+              "timeout",
+              "transient",
+              "execution",
+              "cancelled",
+              "internal"
+            ],
+            "type": "string"
+          },
+          "code": {
+            "description": "Stable machine-readable error code.",
+            "type": "string"
+          },
+          "details": {
+            "description": "Curated safe context (never secrets, stacks, or internal paths).",
+            "type": "object"
+          },
+          "message": {
+            "description": "Human-readable failure summary.",
+            "type": "string"
+          },
+          "retryable": {
+            "description": "Whether retrying may succeed (mirrors top-level retryable).",
+            "type": "boolean"
+          },
+          "suggested_action": {
+            "type": "object",
+            "additionalProperties": false,
+            "description": "Machine-readable recovery hint.",
+            "properties": {
+              "type": {
+                "type": "string",
+                "enum": [
+                  "retry",
+                  "wait",
+                  "change_input",
+                  "reauthorize",
+                  "call_tool",
+                  "contact_operator",
+                  "none"
+                ],
+                "description": "Recovery action type."
+              }
+            },
+            "required": [
+              "type"
+            ]
+          }
+        },
+        "required": [
+          "code",
+          "category",
+          "message",
+          "retryable",
+          "suggested_action"
+        ],
+        "type": "object"
+      },
+      "execution_state": {
+        "description": "Live lifecycle state when the call outlived the sync window (running, queued, ...); null otherwise.",
+        "type": [
+          "string",
+          "null"
+        ]
+      },
+      "job_id": {
+        "description": "Server job handle for this execution.",
+        "type": "string"
+      },
+      "resource_uri": {
+        "type": "string",
+        "description": "Offload pointer for a large result text (nc://jobs/<jobId>/output). Present only when the envelope text was offloaded; fetch the full text with result_fetch."
+      },
+      "resource_link": {
+        "type": "string",
+        "description": "Programmatic offload reference (mcp:result_fetch:<jobId>). Present only when the envelope text was offloaded."
+      },
+      "resource_bytes": {
+        "type": "integer",
+        "minimum": 0,
+        "description": "Byte size of the offloaded result text. Present only when the envelope text was offloaded."
+      },
+      "result": {
+        "description": "Extraction payload: detected format, bounded text, size and coverage flags.",
+        "properties": {
+          "bytes": {
+            "description": "Total file size in bytes.",
+            "minimum": 0,
+            "type": "integer"
+          },
+          "chars": {
+            "description": "Characters returned in text.",
+            "minimum": 0,
+            "type": "integer"
+          },
+          "format": {
+            "description": "Detected document format.",
+            "enum": [
+              "docx",
+              "xlsx",
+              "pdf"
+            ],
+            "type": "string"
+          },
+          "pages": {
+            "description": "PDF page count when known.",
+            "minimum": 0,
+            "type": "integer"
+          },
+          "path": {
+            "description": "Resolved absolute path that was extracted.",
+            "type": "string"
+          },
+          "sheets": {
+            "description": "XLSX sheet count.",
+            "minimum": 0,
+            "type": "integer"
+          },
+          "text": {
+            "description": "Extracted text bounded by max_chars.",
+            "type": "string"
+          },
+          "truncated": {
+            "description": "Whether text was cut at max_chars.",
+            "type": "boolean"
+          },
+          "warnings": {
+            "description": "Non-fatal coverage notes (skipped streams, serial dates, approximate glyphs).",
+            "items": {
+              "type": "string"
+            },
+            "type": "array"
+          }
+        },
+        "type": "object"
+      },
+      "retryable": {
+        "description": "Whether a failed call may succeed on retry.",
+        "type": "boolean"
+      },
+      "status": {
+        "description": "completed on success, failed on error.",
+        "enum": [
+          "completed",
+          "failed"
+        ],
+        "type": "string"
+      },
+      "tool": {
+        "description": "Echo of the invoked tool name.",
+        "type": "string"
+      },
+      "warnings": {
+        "description": "Non-fatal advisory notes. Always present; empty when none.",
+        "items": {
+          "type": "string"
+        },
+        "type": "array"
+      }
+    },
+    "required": [
+      "status",
+      "tool",
+      "client_id",
+      "retryable",
+      "result",
+      "duration_ms",
+      "execution_state",
+      "warnings"
+    ],
+    "type": "object"
+  },
+  "title": "Extract Document Text"
+}

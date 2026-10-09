@@ -1,0 +1,274 @@
+{
+  "name": "nc_feedback",
+  "title": "Report NC Problem",
+  "description": "Reports a suspected product bug, incompatibility, or systemic issue. Use this when an advertised capability fails, errors repeat, or tools contradict each other. RULE: submit when product-owned and reproducible, systemic, or contradictory. When unsure, prefer compatibility/usability. Never include secrets. Do NOT report: bad paths or invalid input, missing resources, policy/authorization rejections, validation errors, cancellations, one-off host problems, or user-code failures. Before reporting, classify, retry once if safe, and collect evidence. FEEDBACK_RATE_LIMITED: batch and send later; FEEDBACK_STORAGE_UNAVAILABLE: retry once. REQUIRED: 1. write title+report 2. submit once. IF FEEDBACK_RATE_LIMITED: wait out throttle. DO NOT mass-submit; duplicates throttle.",
+  "inputSchema": {
+    "$schema": "https://json-schema.org/draft/2020-12/schema",
+    "type": "object",
+    "additionalProperties": false,
+    "required": [
+      "category",
+      "title",
+      "description"
+    ],
+    "properties": {
+      "category": {
+        "type": "string",
+        "enum": [
+          "bug",
+          "compatibility",
+          "missing_capability",
+          "performance",
+          "security",
+          "usability",
+          "other"
+        ],
+        "description": "Problem class. Security reports are routed to a restricted queue."
+      },
+      "title": {
+        "type": "string",
+        "minLength": 5,
+        "maxLength": 160,
+        "description": "Short summary of the suspected problem. Strip secrets, tokens, passwords, keys and cookies before sending."
+      },
+      "description": {
+        "type": "string",
+        "minLength": 10,
+        "maxLength": 8000,
+        "description": "What happened, in the reporter's own words. Never include tokens, passwords, keys or cookies."
+      },
+      "expected_behavior": {
+        "type": "string",
+        "maxLength": 4000,
+        "description": "What should have happened. Strip secrets, tokens, passwords, keys and cookies before sending."
+      },
+      "actual_behavior": {
+        "type": "string",
+        "maxLength": 4000,
+        "description": "What actually happened, including error codes. Strip secrets, tokens, passwords, keys and cookies before sending."
+      },
+      "reproduction": {
+        "type": "string",
+        "maxLength": 6000,
+        "description": "Steps or tool sequence that reproduces the problem. Strip secrets, tokens, passwords, keys and cookies before sending."
+      },
+      "client_id": {
+        "type": "string",
+        "pattern": "^nc_[0-9a-f]{64}$",
+        "minLength": 67,
+        "maxLength": 67,
+        "description": "Related NC client, if the problem is host-specific. Ownership is verified server-side.",
+        "x-mcp-header": "Client-Id"
+      },
+      "related_request_id": {
+        "type": "string",
+        "description": "Related MCP request id for server-side correlation. Not an authorization token.",
+        "maxLength": 128
+      },
+      "related_job_id": {
+        "type": "string",
+        "description": "Related NC job id for server-side correlation. Always include the failing call's job_id when the issue came from a tool call: the server attaches host version, arguments and outcome automatically.",
+        "pattern": "^job_[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$"
+      },
+      "related_process_id": {
+        "type": "string",
+        "pattern": "^prc_[0-9a-f]{32}$",
+        "description": "Related process handle for server-side correlation."
+      },
+      "user_impact": {
+        "type": "string",
+        "enum": [
+          "none",
+          "minor",
+          "workflow_blocked",
+          "client_unusable",
+          "data_risk",
+          "security_risk"
+        ],
+        "description": "Impact on the reporter. Severity is computed server-side; do not inflate."
+      },
+      "include_diagnostics": {
+        "type": "boolean",
+        "default": false,
+        "description": "Attach a sanitized diagnostic bundle (bounded, secret-redacted). Default false."
+      }
+    }
+  },
+  "outputSchema": {
+    "$schema": "https://json-schema.org/draft/2020-12/schema",
+    "type": "object",
+    "properties": {
+      "report_id": {
+        "type": "string",
+        "description": "Stored report handle."
+      },
+      "issue_id": {
+        "type": "string",
+        "description": "Deduplicated issue handle."
+      },
+      "acceptance": {
+        "type": "string",
+        "enum": [
+          "accepted",
+          "linked_existing"
+        ],
+        "description": "accepted = new issue filed; linked_existing = deduplicated onto an existing issue."
+      },
+      "deduplicated": {
+        "type": "boolean",
+        "description": "Whether this report matched a known issue."
+      },
+      "occurrence_count": {
+        "type": "integer",
+        "description": "Times this issue has been reported."
+      },
+      "retryable": {
+        "type": "boolean",
+        "description": "Whether a failed call may succeed on retry."
+      },
+      "duration_ms": {
+        "type": [
+          "integer",
+          "null"
+        ],
+        "description": "Host-measured execution time when available, otherwise central dispatch wall time in milliseconds."
+      },
+      "status": {
+        "type": "string",
+        "enum": [
+          "completed",
+          "failed"
+        ],
+        "description": "completed on success, failed on error."
+      },
+      "tool": {
+        "type": "string",
+        "description": "Echo of the invoked tool name."
+      },
+      "client_id": {
+        "type": [
+          "string",
+          "null"
+        ],
+        "description": "Echo of the target host id (null when no host was targeted)."
+      },
+      "execution_state": {
+        "type": [
+          "string",
+          "null"
+        ],
+        "description": "Live lifecycle state when the call outlived the sync window (running, queued, ...); null otherwise."
+      },
+      "error": {
+        "type": "object",
+        "additionalProperties": false,
+        "description": "Structured failure detail. Present when status is failed.",
+        "properties": {
+          "code": {
+            "type": "string",
+            "description": "Stable machine-readable error code."
+          },
+          "category": {
+            "type": "string",
+            "enum": [
+              "invalid_argument",
+              "authentication",
+              "authorization",
+              "policy",
+              "not_found",
+              "conflict",
+              "unsupported",
+              "timeout",
+              "transient",
+              "execution",
+              "cancelled",
+              "internal"
+            ],
+            "description": "Public error category for model branching. invalid_argument: Fix the input; do not retry the same call unchanged. authentication: Re-authenticate before retrying. authorization: Insufficient permission; do not retry or attempt to bypass. policy: Rejected by host policy; do not attempt to bypass. Adjust the request or ask an operator. not_found: Resource missing; re-discover the id/path/service/container before retrying. conflict: Conflicting state; re-read the current state, then decide. unsupported: Not supported here; do not retry. Look for an alternative tool or capability. timeout: Timed out; if retryable, wait, then poll with job_get. transient: Transient; retry with backoff if retryable. execution: Execution failure; inspect stdout/stderr/state before retrying. cancelled: Cancelled; do not blindly retry. internal: Internal error; if it reproduces, report it with nc_feedback."
+          },
+          "message": {
+            "type": "string",
+            "description": "Human-readable failure summary."
+          },
+          "retryable": {
+            "type": "boolean",
+            "description": "Whether retrying may succeed (mirrors top-level retryable)."
+          },
+          "suggested_action": {
+            "type": "object",
+            "additionalProperties": false,
+            "description": "Machine-readable recovery hint.",
+            "properties": {
+              "type": {
+                "type": "string",
+                "enum": [
+                  "retry",
+                  "wait",
+                  "change_input",
+                  "reauthorize",
+                  "call_tool",
+                  "contact_operator",
+                  "none"
+                ],
+                "description": "Recovery action type."
+              }
+            },
+            "required": [
+              "type"
+            ]
+          },
+          "details": {
+            "type": "object",
+            "description": "Curated safe context (never secrets, stacks, or internal paths)."
+          }
+        },
+        "required": [
+          "code",
+          "category",
+          "message",
+          "retryable",
+          "suggested_action"
+        ]
+      },
+      "warnings": {
+        "type": "array",
+        "description": "Non-fatal advisory notes. Always present; empty when none.",
+        "items": {
+          "type": "string"
+        }
+      }
+    },
+    "required": [
+      "status",
+      "tool",
+      "client_id",
+      "retryable",
+      "duration_ms",
+      "execution_state",
+      "warnings"
+    ],
+    "additionalProperties": false
+  },
+  "annotations": {
+    "title": "Report NC Problem",
+    "readOnlyHint": false,
+    "destructiveHint": false,
+    "idempotentHint": false,
+    "openWorldHint": false
+  },
+  "icons": [
+    {
+      "src": "https://nodecommand.app/icons/nc_feedback.svg",
+      "mimeType": "image/svg+xml",
+      "sizes": [
+        "any"
+      ],
+      "theme": "light"
+    }
+  ],
+  "_meta": {
+    "nodecommand.app/execution": {
+      "taskSupport": "forbidden"
+    }
+  }
+}

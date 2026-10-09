@@ -1,0 +1,9 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "title": "NC agent capabilities",
+  "type": "array",
+  "items": {
+    "type": "string"
+  },
+  "description": "Advertised handler names (tools) plus feature flags (host_policy_v1, ...)."
+}

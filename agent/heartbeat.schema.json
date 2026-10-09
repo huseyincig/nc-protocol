@@ -1,0 +1,22 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "title": "NC heartbeat / ping-pong",
+  "type": "object",
+  "properties": {
+    "type": {
+      "enum": [
+        "ping",
+        "pong",
+        "heartbeat"
+      ]
+    },
+    "timestamp": {
+      "type": "string",
+      "format": "date-time"
+    }
+  },
+  "required": [
+    "type"
+  ],
+  "additionalProperties": true
+}

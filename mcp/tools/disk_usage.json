@@ -1,0 +1,259 @@
+{
+  "name": "disk_usage",
+  "title": "Disk Usage",
+  "description": "Reads filesystem usage (mounts, total/used/free bytes, use percent) on a client. Omit path for all mounts; pass a path to focus one filesystem. Pass depth (1-8) for an additional du-style per-directory breakdown of path, and one_file_system to stay on one filesystem. Async: poll job_get with the returned job_id. Pressure confirmed: system_diagnose for the verdict. REQUIRED: 1. omit path for all mounts 2. read. IF CLIENT_OFFLINE: retry when reachable. DO NOT shell df; units normalize here.",
+  "inputSchema": {
+    "$schema": "https://json-schema.org/draft/2020-12/schema",
+    "type": "object",
+    "additionalProperties": false,
+    "required": [
+      "client_id"
+    ],
+    "properties": {
+      "client_id": {
+        "type": "string",
+        "pattern": "^nc_[0-9a-f]{64}$",
+        "minLength": 67,
+        "maxLength": 67,
+        "description": "Target NC client. Absolute routing handle, independent of any connection.",
+        "x-mcp-header": "Client-Id"
+      },
+      "path": {
+        "type": "string",
+        "minLength": 1,
+        "maxLength": 4096,
+        "description": "Optional path to focus a single filesystem."
+      },
+      "depth": {
+        "type": "integer",
+        "minimum": 1,
+        "maximum": 8,
+        "description": "Restrict du-style traversal to N levels; equivalent to --max-depth. Omit for the mount-capacity report only."
+      },
+      "one_file_system": {
+        "type": "boolean",
+        "description": "Stay on the mounted filesystem; do not cross mount points. Du-style equivalent of -x."
+      }
+    }
+  },
+  "outputSchema": {
+    "$schema": "https://json-schema.org/draft/2020-12/schema",
+    "type": "object",
+    "properties": {
+      "status": {
+        "type": "string",
+        "enum": [
+          "completed",
+          "failed"
+        ],
+        "description": "completed on success, failed on error."
+      },
+      "client_id": {
+        "type": [
+          "string",
+          "null"
+        ],
+        "description": "Echo of the target host id (null when no host was targeted)."
+      },
+      "job_id": {
+        "type": "string",
+        "description": "Server job handle for this execution."
+      },
+      "resource_uri": {
+        "type": "string",
+        "description": "Offload pointer for a large result text (nc://jobs/<jobId>/output). Present only when the envelope text was offloaded; fetch the full text with result_fetch."
+      },
+      "resource_link": {
+        "type": "string",
+        "description": "Programmatic offload reference (mcp:result_fetch:<jobId>). Present only when the envelope text was offloaded."
+      },
+      "resource_bytes": {
+        "type": "integer",
+        "minimum": 0,
+        "description": "Byte size of the offloaded result text. Present only when the envelope text was offloaded."
+      },
+      "tool": {
+        "type": "string",
+        "description": "Echo of the invoked tool name."
+      },
+      "duration_ms": {
+        "type": [
+          "integer",
+          "null"
+        ],
+        "description": "Execution time in milliseconds."
+      },
+      "result": {
+        "type": "object",
+        "description": "Per-filesystem capacity report, fullest first.",
+        "properties": {
+          "platform": {
+            "type": "string",
+            "description": "linux, darwin or win32."
+          },
+          "filesystems": {
+            "type": "array",
+            "description": "One entry per reported filesystem, fullest first.",
+            "items": {
+              "type": "object",
+              "properties": {
+                "mount": {
+                  "type": "string"
+                },
+                "fstype": {
+                  "type": "string"
+                },
+                "total_bytes": {
+                  "type": [
+                    "integer",
+                    "null"
+                  ]
+                },
+                "used_bytes": {
+                  "type": [
+                    "integer",
+                    "null"
+                  ]
+                },
+                "free_bytes": {
+                  "type": [
+                    "integer",
+                    "null"
+                  ]
+                },
+                "used_percent": {
+                  "type": [
+                    "number",
+                    "null"
+                  ]
+                }
+              }
+            }
+          }
+        }
+      },
+      "retryable": {
+        "type": "boolean",
+        "description": "Whether a failed call may succeed on retry."
+      },
+      "execution_state": {
+        "type": [
+          "string",
+          "null"
+        ],
+        "description": "Live lifecycle state when the call outlived the sync window (running, queued, ...); null otherwise."
+      },
+      "error": {
+        "type": "object",
+        "additionalProperties": false,
+        "description": "Structured failure detail. Present when status is failed.",
+        "properties": {
+          "code": {
+            "type": "string",
+            "description": "Stable machine-readable error code."
+          },
+          "category": {
+            "type": "string",
+            "enum": [
+              "invalid_argument",
+              "authentication",
+              "authorization",
+              "policy",
+              "not_found",
+              "conflict",
+              "unsupported",
+              "timeout",
+              "transient",
+              "execution",
+              "cancelled",
+              "internal"
+            ],
+            "description": "Public error category for model branching. invalid_argument: Fix the input; do not retry the same call unchanged. authentication: Re-authenticate before retrying. authorization: Insufficient permission; do not retry or attempt to bypass. policy: Rejected by host policy; do not attempt to bypass. Adjust the request or ask an operator. not_found: Resource missing; re-discover the id/path/service/container before retrying. conflict: Conflicting state; re-read the current state, then decide. unsupported: Not supported here; do not retry. Look for an alternative tool or capability. timeout: Timed out; if retryable, wait, then poll with job_get. transient: Transient; retry with backoff if retryable. execution: Execution failure; inspect stdout/stderr/state before retrying. cancelled: Cancelled; do not blindly retry. internal: Internal error; if it reproduces, report it with nc_feedback."
+          },
+          "message": {
+            "type": "string",
+            "description": "Human-readable failure summary."
+          },
+          "retryable": {
+            "type": "boolean",
+            "description": "Whether retrying may succeed (mirrors top-level retryable)."
+          },
+          "suggested_action": {
+            "type": "object",
+            "additionalProperties": false,
+            "description": "Machine-readable recovery hint.",
+            "properties": {
+              "type": {
+                "type": "string",
+                "enum": [
+                  "retry",
+                  "wait",
+                  "change_input",
+                  "reauthorize",
+                  "call_tool",
+                  "contact_operator",
+                  "none"
+                ],
+                "description": "Recovery action type."
+              }
+            },
+            "required": [
+              "type"
+            ]
+          },
+          "details": {
+            "type": "object",
+            "description": "Curated safe context (never secrets, stacks, or internal paths)."
+          }
+        },
+        "required": [
+          "code",
+          "category",
+          "message",
+          "retryable",
+          "suggested_action"
+        ]
+      },
+      "warnings": {
+        "type": "array",
+        "description": "Non-fatal advisory notes. Always present; empty when none.",
+        "items": {
+          "type": "string"
+        }
+      }
+    },
+    "required": [
+      "status",
+      "tool",
+      "client_id",
+      "retryable",
+      "result",
+      "duration_ms",
+      "execution_state",
+      "warnings"
+    ],
+    "additionalProperties": false
+  },
+  "annotations": {
+    "title": "Disk Usage",
+    "readOnlyHint": true,
+    "destructiveHint": false,
+    "idempotentHint": true,
+    "openWorldHint": false
+  },
+  "icons": [
+    {
+      "src": "https://nodecommand.app/icons/disk_usage.svg",
+      "mimeType": "image/svg+xml",
+      "sizes": [
+        "any"
+      ],
+      "theme": "light"
+    }
+  ],
+  "_meta": {
+    "nodecommand.app/execution": {
+      "taskSupport": "forbidden"
+    }
+  }
+}

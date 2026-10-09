@@ -1,0 +1,225 @@
+{
+  "name": "job_get",
+  "title": "Inspect Job",
+  "description": "Reads the lifecycle state of a server job created by an earlier tool call. Use to poll long-running operations to completion instead of guessing. Read-only; the job_id is correlation-safe to store. Jobs are tenant-scoped: ids from other tenants behave as not found. The result payload may omit large text (logs, streamed output). When the job is completed but the text is truncated or absent, read it with result_fetch using the job_id. JOB_NOT_FOUND: wrong tenant or id; never re-fire it running. REQUIRED: 1. pass job_id 2. poll to terminal. IF JOB_NOT_FOUND: recheck spelling. DO NOT spin forever; result_fetch drains text.",
+  "inputSchema": {
+    "$schema": "https://json-schema.org/draft/2020-12/schema",
+    "type": "object",
+    "additionalProperties": false,
+    "required": [
+      "job_id"
+    ],
+    "properties": {
+      "job_id": {
+        "type": "string",
+        "pattern": "^job_[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$",
+        "description": "Server job handle returned by an earlier tool call."
+      }
+    }
+  },
+  "outputSchema": {
+    "$schema": "https://json-schema.org/draft/2020-12/schema",
+    "type": "object",
+    "properties": {
+      "status": {
+        "type": "string",
+        "description": "completed on success, failed on error.",
+        "enum": [
+          "completed",
+          "failed"
+        ]
+      },
+      "tool": {
+        "type": "string",
+        "description": "Echo of the invoked tool name."
+      },
+      "job_id": {
+        "type": "string",
+        "description": "Echo of the inspected job handle."
+      },
+      "resource_uri": {
+        "type": "string",
+        "description": "Offload pointer for a large result text (nc://jobs/<jobId>/output). Present only when the envelope text was offloaded; fetch the full text with result_fetch."
+      },
+      "resource_link": {
+        "type": "string",
+        "description": "Programmatic offload reference (mcp:result_fetch:<jobId>). Present only when the envelope text was offloaded."
+      },
+      "resource_bytes": {
+        "type": "integer",
+        "minimum": 0,
+        "description": "Byte size of the offloaded result text. Present only when the envelope text was offloaded."
+      },
+      "state": {
+        "type": "string",
+        "enum": [
+          "queued",
+          "claimed",
+          "running",
+          "completed",
+          "failed",
+          "timeout",
+          "cancelled"
+        ],
+        "description": "Current lifecycle state. Terminal states never change again."
+      },
+      "job_tool": {
+        "type": "string",
+        "description": "Tool that created the job."
+      },
+      "client_id": {
+        "type": [
+          "string",
+          "null"
+        ],
+        "description": "Host the job targets (null for host-less jobs)."
+      },
+      "created_at": {
+        "type": "string",
+        "description": "Creation timestamp.",
+        "format": "date-time"
+      },
+      "finished_at": {
+        "type": [
+          "string",
+          "null"
+        ],
+        "description": "Terminal timestamp, null while pending.",
+        "format": "date-time"
+      },
+      "retryable": {
+        "type": "boolean",
+        "description": "Whether a failed call may succeed on retry."
+      },
+      "duration_ms": {
+        "type": [
+          "integer",
+          "null"
+        ],
+        "description": "Execution time in milliseconds, null while pending."
+      },
+      "execution_state": {
+        "type": [
+          "string",
+          "null"
+        ],
+        "description": "Live lifecycle state when the call outlived the sync window (running, queued, ...); null otherwise."
+      },
+      "error": {
+        "type": "object",
+        "additionalProperties": false,
+        "description": "Structured failure detail. Present when status is failed.",
+        "properties": {
+          "code": {
+            "type": "string",
+            "description": "Stable machine-readable error code."
+          },
+          "category": {
+            "type": "string",
+            "enum": [
+              "invalid_argument",
+              "authentication",
+              "authorization",
+              "policy",
+              "not_found",
+              "conflict",
+              "unsupported",
+              "timeout",
+              "transient",
+              "execution",
+              "cancelled",
+              "internal"
+            ],
+            "description": "Public error category for model branching. invalid_argument: Fix the input; do not retry the same call unchanged. authentication: Re-authenticate before retrying. authorization: Insufficient permission; do not retry or attempt to bypass. policy: Rejected by host policy; do not attempt to bypass. Adjust the request or ask an operator. not_found: Resource missing; re-discover the id/path/service/container before retrying. conflict: Conflicting state; re-read the current state, then decide. unsupported: Not supported here; do not retry. Look for an alternative tool or capability. timeout: Timed out; if retryable, wait, then poll with job_get. transient: Transient; retry with backoff if retryable. execution: Execution failure; inspect stdout/stderr/state before retrying. cancelled: Cancelled; do not blindly retry. internal: Internal error; if it reproduces, report it with nc_feedback."
+          },
+          "message": {
+            "type": "string",
+            "description": "Human-readable failure summary."
+          },
+          "retryable": {
+            "type": "boolean",
+            "description": "Whether retrying may succeed (mirrors top-level retryable)."
+          },
+          "suggested_action": {
+            "type": "object",
+            "additionalProperties": false,
+            "description": "Machine-readable recovery hint.",
+            "properties": {
+              "type": {
+                "type": "string",
+                "enum": [
+                  "retry",
+                  "wait",
+                  "change_input",
+                  "reauthorize",
+                  "call_tool",
+                  "contact_operator",
+                  "none"
+                ],
+                "description": "Recovery action type."
+              }
+            },
+            "required": [
+              "type"
+            ]
+          },
+          "details": {
+            "type": "object",
+            "description": "Curated safe context (never secrets, stacks, or internal paths)."
+          }
+        },
+        "required": [
+          "code",
+          "category",
+          "message",
+          "retryable",
+          "suggested_action"
+        ]
+      },
+      "warnings": {
+        "type": "array",
+        "description": "Non-fatal advisory notes. Always present; empty when none.",
+        "items": {
+          "type": "string"
+        }
+      },
+      "result": {
+        "type": "object",
+        "description": "Completed job result payload when available."
+      }
+    },
+    "required": [
+      "status",
+      "tool",
+      "client_id",
+      "retryable",
+      "result",
+      "duration_ms",
+      "execution_state",
+      "warnings"
+    ],
+    "additionalProperties": false
+  },
+  "annotations": {
+    "title": "Inspect Job",
+    "readOnlyHint": true,
+    "destructiveHint": false,
+    "idempotentHint": true,
+    "openWorldHint": false
+  },
+  "icons": [
+    {
+      "src": "https://nodecommand.app/icons/job_get.svg",
+      "mimeType": "image/svg+xml",
+      "sizes": [
+        "any"
+      ],
+      "theme": "light"
+    }
+  ],
+  "_meta": {
+    "nodecommand.app/execution": {
+      "taskSupport": "forbidden"
+    }
+  }
+}

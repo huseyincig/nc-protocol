@@ -1,0 +1,64 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "title": "NC host policy projection",
+  "type": "object",
+  "properties": {
+    "client_id": {
+      "type": "string",
+      "pattern": "^nc_[0-9a-f]{64}$"
+    },
+    "contract_version": {
+      "type": "string",
+      "const": "1.0.0"
+    },
+    "revision": {
+      "type": "integer",
+      "minimum": 1
+    },
+    "profile": {
+      "type": "string",
+      "enum": [
+        "read_only",
+        "standard",
+        "full",
+        "custom"
+      ]
+    },
+    "capabilities": {
+      "type": "object"
+    },
+    "digest": {
+      "type": "string",
+      "pattern": "^[0-9a-f]{64}$"
+    },
+    "roots": {
+      "type": [
+        "object",
+        "null"
+      ],
+      "properties": {
+        "allowed_read_roots": {
+          "type": "array",
+          "items": {
+            "type": "string"
+          }
+        },
+        "allowed_write_roots": {
+          "type": "array",
+          "items": {
+            "type": "string"
+          }
+        }
+      }
+    }
+  },
+  "required": [
+    "client_id",
+    "contract_version",
+    "revision",
+    "profile",
+    "capabilities",
+    "digest"
+  ],
+  "additionalProperties": true
+}

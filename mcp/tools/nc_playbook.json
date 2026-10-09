@@ -1,0 +1,276 @@
+{
+  "name": "nc_playbook",
+  "title": "Playbook Guide",
+  "description": "Multi-action playbook guide. Use action=list to discover available step-by-step runbooks, action=get to fetch a full playbook definition by name, and action=execute to receive ordered step-by-step guidance for a task. Central guidance only; never touches hosts. Use this BEFORE complex troubleshooting or multi-step recovery (service failure, disk pressure, container crash, log diagnosis, git dirty state, package drift, performance degradation). If a task matches a playbook, follow its steps instead of guessing. REQUIRED: 1. action=list 2. action=get name=<name> 3. follow steps. IF PLAYBOOK_NOT_FOUND: list and pick the closest match. DO NOT guess multi-step recoveries.",
+  "icons": [
+    {
+      "src": "https://nodecommand.app/icons/nc_playbook.svg",
+      "mimeType": "image/svg+xml",
+      "sizes": [
+        "any"
+      ],
+      "theme": "light"
+    }
+  ],
+  "inputSchema": {
+    "$schema": "https://json-schema.org/draft/2020-12/schema",
+    "type": "object",
+    "unevaluatedProperties": false,
+    "properties": {
+      "action": {
+        "type": "string",
+        "description": "Discriminator parameter selecting the sub-operation to perform.",
+        "enum": [
+          "list",
+          "get",
+          "execute"
+        ]
+      },
+      "name": {
+        "type": "string",
+        "description": "Playbook name to fetch or execute. Required for action=get and action=execute, ignored for action=list.",
+        "minLength": 1,
+        "maxLength": 128
+      }
+    },
+    "required": [
+      "action"
+    ],
+    "allOf": [
+      {
+        "if": {
+          "properties": {
+            "action": {
+              "const": "list"
+            }
+          }
+        },
+        "then": {
+          "properties": {
+            "name": {
+              "description": "Ignored for action=list; omit to list the full catalog."
+            }
+          }
+        }
+      },
+      {
+        "if": {
+          "properties": {
+            "action": {
+              "enum": [
+                "get",
+                "execute"
+              ]
+            }
+          }
+        },
+        "then": {
+          "required": [
+            "name"
+          ]
+        }
+      }
+    ]
+  },
+  "outputSchema": {
+    "$schema": "https://json-schema.org/draft/2020-12/schema",
+    "type": "object",
+    "additionalProperties": false,
+    "properties": {
+      "status": {
+        "type": "string",
+        "enum": [
+          "completed",
+          "failed"
+        ],
+        "description": "completed on success, failed on error."
+      },
+      "tool": {
+        "type": "string",
+        "description": "Echo of the invoked tool name."
+      },
+      "client_id": {
+        "type": [
+          "string",
+          "null"
+        ],
+        "description": "Echo of the target host id (null when no host was targeted)."
+      },
+      "action": {
+        "type": "string",
+        "description": "Echo of the executed action discriminator."
+      },
+      "playbooks": {
+        "type": "array",
+        "description": "Playbook summaries for action=list.",
+        "items": {
+          "type": "object",
+          "properties": {
+            "name": {
+              "type": "string"
+            },
+            "title": {
+              "type": "string"
+            },
+            "description": {
+              "type": "string"
+            },
+            "triggers": {
+              "type": "array",
+              "items": {
+                "type": "string"
+              }
+            }
+          },
+          "required": [
+            "name",
+            "title"
+          ]
+        }
+      },
+      "playbook": {
+        "type": "object",
+        "description": "Full playbook definition for action=get and action=execute."
+      },
+      "steps": {
+        "type": "array",
+        "description": "Ordered guidance steps for action=execute.",
+        "items": {
+          "type": "object"
+        }
+      },
+      "total_steps": {
+        "type": [
+          "integer",
+          "null"
+        ],
+        "description": "Number of steps in the playbook for action=execute."
+      },
+      "current_step": {
+        "type": [
+          "integer",
+          "null"
+        ],
+        "description": "First step to execute (always 1 for scaffolding)."
+      },
+      "duration_ms": {
+        "type": [
+          "integer",
+          "null"
+        ],
+        "description": "Operation duration in milliseconds."
+      },
+      "retryable": {
+        "type": "boolean",
+        "description": "Whether a failed call may succeed on retry."
+      },
+      "execution_state": {
+        "type": [
+          "string",
+          "null"
+        ],
+        "description": "Live lifecycle state when the call outlived the sync window; null otherwise."
+      },
+      "error": {
+        "type": "object",
+        "additionalProperties": false,
+        "description": "Structured failure detail. Present when status is failed.",
+        "properties": {
+          "code": {
+            "type": "string",
+            "description": "Stable machine-readable error code."
+          },
+          "category": {
+            "type": "string",
+            "enum": [
+              "invalid_argument",
+              "authentication",
+              "authorization",
+              "policy",
+              "not_found",
+              "conflict",
+              "unsupported",
+              "timeout",
+              "transient",
+              "execution",
+              "cancelled",
+              "internal"
+            ],
+            "description": "Public error category for model branching. invalid_argument: Fix the input; do not retry the same call unchanged. authentication: Re-authenticate before retrying. authorization: Insufficient permission; do not retry or attempt to bypass. policy: Rejected by host policy; do not attempt to bypass. Adjust the request or ask an operator. not_found: Resource missing; re-discover the id/path/service/container before retrying. conflict: Conflicting state; re-read the current state, then decide. unsupported: Not supported here; do not retry. Look for an alternative tool or capability. timeout: Timed out; if retryable, wait, then poll with job_get. transient: Transient; retry with backoff if retryable. execution: Execution failure; inspect stdout/stderr/state before retrying. cancelled: Cancelled; do not blindly retry. internal: Internal error; if it reproduces, report it with nc_feedback."
+          },
+          "message": {
+            "type": "string",
+            "description": "Human-readable failure summary."
+          },
+          "retryable": {
+            "type": "boolean",
+            "description": "Whether retrying may succeed."
+          },
+          "suggested_action": {
+            "type": "object",
+            "additionalProperties": false,
+            "description": "Machine-readable recovery hint.",
+            "properties": {
+              "type": {
+                "type": "string",
+                "enum": [
+                  "retry",
+                  "wait",
+                  "change_input",
+                  "reauthorize",
+                  "call_tool",
+                  "contact_operator",
+                  "none"
+                ],
+                "description": "Recovery action type."
+              }
+            },
+            "required": [
+              "type"
+            ]
+          },
+          "details": {
+            "type": "object",
+            "description": "Curated safe context."
+          }
+        },
+        "required": [
+          "code",
+          "category",
+          "message",
+          "retryable",
+          "suggested_action"
+        ]
+      },
+      "warnings": {
+        "type": "array",
+        "description": "Non-fatal advisory notes. Always present; empty when none.",
+        "items": {
+          "type": "string"
+        }
+      }
+    },
+    "required": [
+      "status",
+      "tool",
+      "client_id",
+      "action",
+      "retryable",
+      "duration_ms",
+      "execution_state",
+      "warnings"
+    ]
+  },
+  "annotations": {
+    "title": "Playbook Guide",
+    "readOnlyHint": true,
+    "destructiveHint": false,
+    "idempotentHint": true,
+    "openWorldHint": false
+  },
+  "_meta": {
+    "nodecommand.app/execution": {
+      "taskSupport": "forbidden"
+    }
+  }
+}

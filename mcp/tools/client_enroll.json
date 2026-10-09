@@ -1,0 +1,216 @@
+{
+  "name": "client_enroll",
+  "title": "Enroll Host",
+  "description": "Creates a new NC client identity and one-time visible enrollment script for a supported platform. Use this when onboarding a new host. Returns identity plus script. For removing hosts, use client_forget instead. ENROLLMENT_EXPIRED: mint fresh, never reuse a token. REQUIRED: 1. pick platform 2. run one-time script. IF ENROLLMENT_EXPIRED: mint a fresh one. DO NOT reuse scripts; single-use only.",
+  "inputSchema": {
+    "$schema": "https://json-schema.org/draft/2020-12/schema",
+    "type": "object",
+    "additionalProperties": false,
+    "required": [
+      "platform"
+    ],
+    "properties": {
+      "platform": {
+        "type": "string",
+        "enum": [
+          "any",
+          "windows",
+          "linux",
+          "macos"
+        ],
+        "description": "Target platform for the enrollment instructions."
+      },
+      "name": {
+        "type": "string",
+        "maxLength": 128,
+        "description": "Display name for the new host."
+      },
+      "server_url": {
+        "type": "string",
+        "maxLength": 2048,
+        "description": "Hub URL the new host will connect to."
+      }
+    }
+  },
+  "outputSchema": {
+    "$schema": "https://json-schema.org/draft/2020-12/schema",
+    "type": "object",
+    "properties": {
+      "status": {
+        "type": "string",
+        "enum": [
+          "completed",
+          "failed"
+        ],
+        "description": "completed on success, failed on error."
+      },
+      "tool": {
+        "type": "string",
+        "description": "Echo of the invoked tool name."
+      },
+      "enrollment_token": {
+        "type": "string",
+        "description": "One-time enrollment token."
+      },
+      "host_id": {
+        "type": "string",
+        "description": "New host identity."
+      },
+      "expires_at": {
+        "type": "string",
+        "description": "Token expiry timestamp.",
+        "format": "date-time"
+      },
+      "install_commands": {
+        "type": "object",
+        "properties": {
+          "linux": {
+            "type": "string"
+          },
+          "windows": {
+            "type": "string"
+          },
+          "macos": {
+            "type": "string"
+          }
+        },
+        "description": "Per-platform install commands."
+      },
+      "retryable": {
+        "type": "boolean",
+        "description": "Whether a failed call may succeed on retry."
+      },
+      "duration_ms": {
+        "type": [
+          "integer",
+          "null"
+        ],
+        "description": "Host-measured execution time when available, otherwise central dispatch wall time in milliseconds."
+      },
+      "client_id": {
+        "type": [
+          "string",
+          "null"
+        ],
+        "description": "Echo of the target host id (null when no host was targeted)."
+      },
+      "execution_state": {
+        "type": [
+          "string",
+          "null"
+        ],
+        "description": "Live lifecycle state when the call outlived the sync window (running, queued, ...); null otherwise."
+      },
+      "error": {
+        "type": "object",
+        "additionalProperties": false,
+        "description": "Structured failure detail. Present when status is failed.",
+        "properties": {
+          "code": {
+            "type": "string",
+            "description": "Stable machine-readable error code."
+          },
+          "category": {
+            "type": "string",
+            "enum": [
+              "invalid_argument",
+              "authentication",
+              "authorization",
+              "policy",
+              "not_found",
+              "conflict",
+              "unsupported",
+              "timeout",
+              "transient",
+              "execution",
+              "cancelled",
+              "internal"
+            ],
+            "description": "Public error category for model branching. invalid_argument: Fix the input; do not retry the same call unchanged. authentication: Re-authenticate before retrying. authorization: Insufficient permission; do not retry or attempt to bypass. policy: Rejected by host policy; do not attempt to bypass. Adjust the request or ask an operator. not_found: Resource missing; re-discover the id/path/service/container before retrying. conflict: Conflicting state; re-read the current state, then decide. unsupported: Not supported here; do not retry. Look for an alternative tool or capability. timeout: Timed out; if retryable, wait, then poll with job_get. transient: Transient; retry with backoff if retryable. execution: Execution failure; inspect stdout/stderr/state before retrying. cancelled: Cancelled; do not blindly retry. internal: Internal error; if it reproduces, report it with nc_feedback."
+          },
+          "message": {
+            "type": "string",
+            "description": "Human-readable failure summary."
+          },
+          "retryable": {
+            "type": "boolean",
+            "description": "Whether retrying may succeed (mirrors top-level retryable)."
+          },
+          "suggested_action": {
+            "type": "object",
+            "additionalProperties": false,
+            "description": "Machine-readable recovery hint.",
+            "properties": {
+              "type": {
+                "type": "string",
+                "enum": [
+                  "retry",
+                  "wait",
+                  "change_input",
+                  "reauthorize",
+                  "call_tool",
+                  "contact_operator",
+                  "none"
+                ],
+                "description": "Recovery action type."
+              }
+            },
+            "required": [
+              "type"
+            ]
+          },
+          "details": {
+            "type": "object",
+            "description": "Curated safe context (never secrets, stacks, or internal paths)."
+          }
+        },
+        "required": [
+          "code",
+          "category",
+          "message",
+          "retryable",
+          "suggested_action"
+        ]
+      },
+      "warnings": {
+        "type": "array",
+        "description": "Non-fatal advisory notes. Always present; empty when none.",
+        "items": {
+          "type": "string"
+        }
+      }
+    },
+    "required": [
+      "status",
+      "tool",
+      "client_id",
+      "retryable",
+      "duration_ms",
+      "execution_state",
+      "warnings"
+    ],
+    "additionalProperties": false
+  },
+  "annotations": {
+    "title": "Enroll Host",
+    "readOnlyHint": false,
+    "destructiveHint": false,
+    "idempotentHint": false,
+    "openWorldHint": false
+  },
+  "icons": [
+    {
+      "src": "https://nodecommand.app/icons/client_enroll.svg",
+      "mimeType": "image/svg+xml",
+      "sizes": [
+        "any"
+      ],
+      "theme": "light"
+    }
+  ],
+  "_meta": {
+    "nodecommand.app/execution": {
+      "taskSupport": "forbidden"
+    }
+  }
+}

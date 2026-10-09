@@ -1,0 +1,31 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "title": "NC hub job request",
+  "type": "object",
+  "properties": {
+    "type": {
+      "const": "request"
+    },
+    "job_id": {
+      "type": "string"
+    },
+    "tool": {
+      "type": "string"
+    },
+    "request_payload": {
+      "type": "object"
+    },
+    "policy_binding": {
+      "type": [
+        "object",
+        "null"
+      ]
+    }
+  },
+  "required": [
+    "type",
+    "job_id",
+    "tool"
+  ],
+  "additionalProperties": true
+}

@@ -1,0 +1,536 @@
+{
+  "name": "git_inspect",
+  "title": "Inspect Git Repository",
+  "description": "Reads git repository state on a client: status, log, diff, branch, or combined changes. Use this for working-tree and history inspection; action=changes fuses status and diff in one call (operator role required, viewers use the other actions). Returns structured repo data with bounded patches. Clone with git_clone; write with git_write. Async: poll job_get with the returned job_id. GIT_OP_FAILED: not a checkout. REQUIRED: 1. pick view 2. read tree. IF GIT_OP_FAILED: verify repo path. DO NOT shell git; grammar lives here.",
+  "inputSchema": {
+    "$schema": "https://json-schema.org/draft/2020-12/schema",
+    "type": "object",
+    "properties": {
+      "client_id": {
+        "type": "string",
+        "pattern": "^nc_[0-9a-f]{64}$",
+        "minLength": 67,
+        "maxLength": 67,
+        "description": "Target NC client. Absolute routing handle, independent of any connection.",
+        "x-mcp-header": "Client-Id"
+      },
+      "action": {
+        "type": "string",
+        "enum": [
+          "status",
+          "log",
+          "diff",
+          "branch",
+          "changes"
+        ],
+        "description": "Git inspection to perform."
+      },
+      "path": {
+        "type": "string",
+        "minLength": 1,
+        "maxLength": 4096,
+        "description": "Repository root on the selected client, under allowed roots."
+      }
+    },
+    "required": [
+      "client_id",
+      "action",
+      "path"
+    ],
+    "unevaluatedProperties": false,
+    "allOf": [
+      {
+        "if": {
+          "properties": {
+            "action": {
+              "const": "status"
+            }
+          }
+        },
+        "then": {
+          "properties": {}
+        }
+      },
+      {
+        "if": {
+          "properties": {
+            "action": {
+              "const": "log"
+            }
+          }
+        },
+        "then": {
+          "properties": {
+            "limit": {
+              "type": "integer",
+              "minimum": 1,
+              "maximum": 100,
+              "description": "Maximum commits returned. Defaults to 20."
+            },
+            "branch": {
+              "type": "string",
+              "minLength": 1,
+              "maxLength": 128,
+              "description": "Optional branch to read instead of HEAD."
+            }
+          }
+        }
+      },
+      {
+        "if": {
+          "properties": {
+            "action": {
+              "const": "diff"
+            }
+          }
+        },
+        "then": {
+          "properties": {
+            "branch": {
+              "type": "string",
+              "minLength": 1,
+              "maxLength": 128,
+              "description": "Optional branch to read instead of HEAD."
+            },
+            "staged": {
+              "type": "boolean",
+              "description": "Diff the index instead of the working tree. Defaults to false."
+            },
+            "stat_only": {
+              "type": "boolean",
+              "description": "Return --stat instead of the full diff. Defaults to true."
+            },
+            "max_patch_bytes": {
+              "type": "integer",
+              "minimum": 1024,
+              "maximum": 262144,
+              "description": "Combined patch cap in bytes. Defaults to 65536."
+            }
+          }
+        }
+      },
+      {
+        "if": {
+          "properties": {
+            "action": {
+              "const": "branch"
+            }
+          }
+        },
+        "then": {
+          "properties": {}
+        }
+      },
+      {
+        "if": {
+          "properties": {
+            "action": {
+              "const": "changes"
+            }
+          }
+        },
+        "then": {
+          "properties": {
+            "limit": {
+              "type": "integer",
+              "minimum": 1,
+              "maximum": 100,
+              "description": "Maximum commits returned. Defaults to 20."
+            },
+            "branch": {
+              "type": "string",
+              "minLength": 1,
+              "maxLength": 128,
+              "description": "Optional branch to read instead of HEAD."
+            },
+            "staged": {
+              "type": "boolean",
+              "description": "Diff the index instead of the working tree. Defaults to false."
+            },
+            "stat_only": {
+              "type": "boolean",
+              "description": "Return --stat instead of the full diff. Defaults to true."
+            },
+            "unstaged": {
+              "type": "boolean",
+              "description": "Include the unstaged (working tree) side. Defaults to true."
+            },
+            "max_files": {
+              "type": "integer",
+              "minimum": 1,
+              "maximum": 500,
+              "description": "Maximum files listed. Defaults to 100."
+            },
+            "max_patch_bytes": {
+              "type": "integer",
+              "minimum": 1024,
+              "maximum": 262144,
+              "description": "Combined patch cap in bytes. Defaults to 65536."
+            }
+          }
+        }
+      }
+    ]
+  },
+  "outputSchema": {
+    "$schema": "https://json-schema.org/draft/2020-12/schema",
+    "type": "object",
+    "properties": {
+      "status": {
+        "type": "string",
+        "enum": [
+          "completed",
+          "failed"
+        ],
+        "description": "completed on success, failed on error."
+      },
+      "client_id": {
+        "type": [
+          "string",
+          "null"
+        ],
+        "description": "Echo of the target host id (null when no host was targeted)."
+      },
+      "job_id": {
+        "type": "string",
+        "description": "Server job handle for this execution."
+      },
+      "resource_uri": {
+        "type": "string",
+        "description": "Offload pointer for a large result text (nc://jobs/<jobId>/output). Present only when the envelope text was offloaded; fetch the full text with result_fetch."
+      },
+      "resource_link": {
+        "type": "string",
+        "description": "Programmatic offload reference (mcp:result_fetch:<jobId>). Present only when the envelope text was offloaded."
+      },
+      "resource_bytes": {
+        "type": "integer",
+        "minimum": 0,
+        "description": "Byte size of the offloaded result text. Present only when the envelope text was offloaded."
+      },
+      "tool": {
+        "type": "string",
+        "description": "Echo of the invoked tool name."
+      },
+      "duration_ms": {
+        "type": [
+          "integer",
+          "null"
+        ],
+        "description": "Execution time in milliseconds."
+      },
+      "result": {
+        "type": "object",
+        "description": "Repo state fields vary by action (staged/truncated carry per-action types).",
+        "properties": {
+          "platform": {
+            "type": "string",
+            "description": "linux, darwin or win32."
+          },
+          "path": {
+            "type": "string",
+            "description": "Canonical repository root that answered."
+          },
+          "branch": {
+            "type": [
+              "string",
+              "null"
+            ],
+            "description": "Current branch, null when detached."
+          },
+          "head": {
+            "type": [
+              "string",
+              "null"
+            ],
+            "description": "HEAD commit SHA (status/changes actions; null on empty repos)."
+          },
+          "dirty": {
+            "type": "boolean",
+            "description": "True when staged, unstaged, or untracked changes exist (changes action)."
+          },
+          "staged_count": {
+            "type": "integer",
+            "minimum": 0,
+            "description": "Staged file count (changes action)."
+          },
+          "unstaged_count": {
+            "type": "integer",
+            "minimum": 0,
+            "description": "Unstaged file count (changes action)."
+          },
+          "untracked_count": {
+            "type": "integer",
+            "minimum": 0,
+            "description": "Untracked file count (changes action)."
+          },
+          "insertions": {
+            "type": [
+              "integer",
+              "null"
+            ],
+            "description": "Inserted lines across staged+unstaged diffs for requested sides; null when truncated (changes action)."
+          },
+          "deletions": {
+            "type": [
+              "integer",
+              "null"
+            ],
+            "description": "Deleted lines across staged+unstaged diffs for requested sides; null when truncated (changes action)."
+          },
+          "ahead": {
+            "type": "integer",
+            "description": "Commits ahead of the upstream."
+          },
+          "behind": {
+            "type": "integer",
+            "description": "Commits behind the upstream."
+          },
+          "staged": {
+            "type": [
+              "boolean",
+              "integer"
+            ],
+            "description": "status/changes: staged file count; diff: whether the index side is shown."
+          },
+          "unstaged": {
+            "type": "integer",
+            "description": "Files with unstaged changes."
+          },
+          "untracked": {
+            "type": "integer",
+            "description": "Untracked files."
+          },
+          "truncated": {
+            "type": [
+              "boolean",
+              "object"
+            ],
+            "description": "status/diff: boolean flag; changes: per-stream truncation detail."
+          },
+          "entries": {
+            "type": "array",
+            "items": {
+              "type": "object",
+              "properties": {
+                "x": {
+                  "type": "string"
+                },
+                "y": {
+                  "type": "string"
+                },
+                "path": {
+                  "type": "string"
+                }
+              }
+            }
+          },
+          "total_entries": {
+            "type": "integer",
+            "minimum": 0,
+            "description": "Total status rows parsed; exceeds entries.length when truncated (status action)."
+          },
+          "commits": {
+            "type": "array",
+            "items": {
+              "type": "object",
+              "properties": {
+                "hash": {
+                  "type": "string"
+                },
+                "author": {
+                  "type": "string"
+                },
+                "date": {
+                  "type": "string"
+                },
+                "message": {
+                  "type": "string"
+                }
+              }
+            }
+          },
+          "stat_only": {
+            "type": "boolean",
+            "description": "True when --stat was returned."
+          },
+          "diff": {
+            "type": "string",
+            "description": "Diff text, empty when the tree is clean."
+          },
+          "current": {
+            "type": [
+              "string",
+              "null"
+            ],
+            "description": "Checked-out branch, null when detached."
+          },
+          "branches": {
+            "type": "array",
+            "items": {
+              "type": "string"
+            }
+          },
+          "files": {
+            "type": "array",
+            "items": {
+              "type": "object",
+              "properties": {
+                "path": {
+                  "type": "string"
+                },
+                "staged": {
+                  "type": "boolean"
+                },
+                "unstaged": {
+                  "type": "boolean"
+                }
+              }
+            }
+          },
+          "summary": {
+            "type": "object",
+            "description": "Change tallies.",
+            "properties": {
+              "staged": {
+                "type": "integer"
+              },
+              "unstaged": {
+                "type": "integer"
+              },
+              "untracked": {
+                "type": "integer"
+              }
+            }
+          },
+          "patch": {
+            "type": "string",
+            "description": "Combined staged then unstaged patch, bounded by max_patch_bytes."
+          }
+        }
+      },
+      "retryable": {
+        "type": "boolean",
+        "description": "Whether a failed call may succeed on retry."
+      },
+      "execution_state": {
+        "type": [
+          "string",
+          "null"
+        ],
+        "description": "Live lifecycle state when the call outlived the sync window (running, queued, ...); null otherwise."
+      },
+      "error": {
+        "type": "object",
+        "additionalProperties": false,
+        "description": "Structured failure detail. Present when status is failed.",
+        "properties": {
+          "code": {
+            "type": "string",
+            "description": "Stable machine-readable error code."
+          },
+          "category": {
+            "type": "string",
+            "enum": [
+              "invalid_argument",
+              "authentication",
+              "authorization",
+              "policy",
+              "not_found",
+              "conflict",
+              "unsupported",
+              "timeout",
+              "transient",
+              "execution",
+              "cancelled",
+              "internal"
+            ],
+            "description": "Public error category for model branching. invalid_argument: Fix the input; do not retry the same call unchanged. authentication: Re-authenticate before retrying. authorization: Insufficient permission; do not retry or attempt to bypass. policy: Rejected by host policy; do not attempt to bypass. Adjust the request or ask an operator. not_found: Resource missing; re-discover the id/path/service/container before retrying. conflict: Conflicting state; re-read the current state, then decide. unsupported: Not supported here; do not retry. Look for an alternative tool or capability. timeout: Timed out; if retryable, wait, then poll with job_get. transient: Transient; retry with backoff if retryable. execution: Execution failure; inspect stdout/stderr/state before retrying. cancelled: Cancelled; do not blindly retry. internal: Internal error; if it reproduces, report it with nc_feedback."
+          },
+          "message": {
+            "type": "string",
+            "description": "Human-readable failure summary."
+          },
+          "retryable": {
+            "type": "boolean",
+            "description": "Whether retrying may succeed (mirrors top-level retryable)."
+          },
+          "suggested_action": {
+            "type": "object",
+            "additionalProperties": false,
+            "description": "Machine-readable recovery hint.",
+            "properties": {
+              "type": {
+                "type": "string",
+                "enum": [
+                  "retry",
+                  "wait",
+                  "change_input",
+                  "reauthorize",
+                  "call_tool",
+                  "contact_operator",
+                  "none"
+                ],
+                "description": "Recovery action type."
+              }
+            },
+            "required": [
+              "type"
+            ]
+          },
+          "details": {
+            "type": "object",
+            "description": "Curated safe context (never secrets, stacks, or internal paths)."
+          }
+        },
+        "required": [
+          "code",
+          "category",
+          "message",
+          "retryable",
+          "suggested_action"
+        ]
+      },
+      "warnings": {
+        "type": "array",
+        "description": "Non-fatal advisory notes. Always present; empty when none.",
+        "items": {
+          "type": "string"
+        }
+      }
+    },
+    "required": [
+      "status",
+      "tool",
+      "client_id",
+      "retryable",
+      "duration_ms",
+      "result",
+      "execution_state",
+      "warnings"
+    ],
+    "additionalProperties": false
+  },
+  "annotations": {
+    "title": "Inspect Git Repository",
+    "readOnlyHint": true,
+    "destructiveHint": false,
+    "idempotentHint": true,
+    "openWorldHint": false
+  },
+  "icons": [
+    {
+      "src": "https://nodecommand.app/icons/git_inspect.svg",
+      "mimeType": "image/svg+xml",
+      "sizes": [
+        "any"
+      ],
+      "theme": "light"
+    }
+  ],
+  "_meta": {
+    "nodecommand.app/execution": {
+      "taskSupport": "forbidden"
+    }
+  }
+}

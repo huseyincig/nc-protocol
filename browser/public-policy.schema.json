@@ -1,0 +1,73 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "title": "NC public browser/egress policy",
+  "type": "object",
+  "properties": {
+    "allow_schemes": {
+      "type": "array",
+      "items": {
+        "type": "string"
+      },
+      "default": [
+        "http:",
+        "https:"
+      ]
+    },
+    "deny_schemes": {
+      "type": "array",
+      "items": {
+        "type": "string"
+      }
+    },
+    "cloud_metadata_hosts": {
+      "type": "array",
+      "items": {
+        "type": "string"
+      }
+    },
+    "private_network_allowed": {
+      "type": "boolean"
+    },
+    "script_execution_allowed": {
+      "type": "boolean"
+    },
+    "allowed_hosts": {
+      "type": "array",
+      "items": {
+        "type": "string"
+      },
+      "description": "Hosts the browser may navigate to. Empty means no host allowlist."
+    },
+    "blocked_hosts": {
+      "type": "array",
+      "items": {
+        "type": "string"
+      },
+      "description": "Hosts the browser must never navigate to. Evaluated before allowed_hosts."
+    },
+    "allow_loopback": {
+      "type": "boolean",
+      "description": "Allow loopback navigation (localhost, 127/8, ::1). Default follows private_network_allowed."
+    },
+    "allow_private_networks": {
+      "type": "boolean",
+      "description": "Allow RFC1918/private navigation. Prefer over legacy private_network_allowed."
+    },
+    "downloads_allowed": {
+      "type": "boolean"
+    },
+    "uploads_allowed": {
+      "type": "boolean"
+    },
+    "existing_attach_allowed": {
+      "type": "boolean",
+      "description": "Allow mode=existing CDP attach. Default false."
+    },
+    "headed_allowed": {
+      "type": "boolean",
+      "description": "Allow headed (visible) browsers. Default false."
+    }
+  },
+  "required": [],
+  "additionalProperties": true
+}

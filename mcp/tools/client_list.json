@@ -1,0 +1,276 @@
+{
+  "name": "client_list",
+  "title": "List Hosts",
+  "description": "Lists enrolled NC hosts using safe inventory metadata for explicit target discovery. Use this to resolve which client_id a task needs. Returns host inventory rows. For fleet-wide reads in one call use fleet_snapshot; for per-host health detail use system_snapshot instead. Empty result: check the status filter; never guess a client_id from history. REQUIRED: 1. filter status 2. take client_id. IF CLIENT_NOT_FOUND: retry status=all. DO NOT invent ids; fleet_snapshot covers fleets. Capabilities are host capability identifiers, not necessarily callable MCP tool names; select actions only from the advertised MCP tool catalog.",
+  "inputSchema": {
+    "$schema": "https://json-schema.org/draft/2020-12/schema",
+    "type": "object",
+    "additionalProperties": false,
+    "properties": {
+      "status": {
+        "type": "string",
+        "enum": [
+          "all",
+          "online",
+          "offline"
+        ],
+        "default": "all",
+        "description": "Filter hosts by connectivity state."
+      },
+      "limit": {
+        "type": "integer",
+        "minimum": 1,
+        "maximum": 200,
+        "default": 100,
+        "description": "Maximum hosts to return."
+      }
+    },
+    "required": []
+  },
+  "outputSchema": {
+    "$schema": "https://json-schema.org/draft/2020-12/schema",
+    "type": "object",
+    "properties": {
+      "status": {
+        "type": "string",
+        "enum": [
+          "completed",
+          "failed"
+        ],
+        "description": "completed on success, failed on error."
+      },
+      "tool": {
+        "type": "string",
+        "description": "Echo of the invoked tool name."
+      },
+      "clients": {
+        "type": "array",
+        "items": {
+          "type": "object",
+          "properties": {
+            "install_mode": {
+              "type": [
+                "string",
+                "null"
+              ],
+              "description": "Installation mode of the client."
+            },
+            "client_id": {
+              "type": "string",
+              "pattern": "^nc_[0-9a-f]{64}$",
+              "description": "Target NC client identity."
+            },
+            "name": {
+              "type": [
+                "string",
+                "null"
+              ],
+              "description": "Display name."
+            },
+            "hostname": {
+              "type": [
+                "string",
+                "null"
+              ],
+              "description": "Host machine name."
+            },
+            "platform": {
+              "type": [
+                "string",
+                "null"
+              ],
+              "description": "OS platform (e.g. linux, win32, darwin)."
+            },
+            "arch": {
+              "type": [
+                "string",
+                "null"
+              ],
+              "description": "CPU architecture."
+            },
+            "client_version": {
+              "type": [
+                "string",
+                "null"
+              ],
+              "description": "Running agent version."
+            },
+            "status": {
+              "type": "string",
+              "enum": [
+                "online",
+                "offline"
+              ],
+              "description": "Current connectivity state."
+            },
+            "last_seen": {
+              "type": [
+                "string",
+                "null"
+              ],
+              "description": "Last contact timestamp.",
+              "format": "date-time"
+            },
+            "transport": {
+              "type": [
+                "string",
+                "null"
+              ],
+              "description": "Live transport name when connected."
+            },
+            "transport_scheme": {
+              "type": [
+                "string",
+                "null"
+              ],
+              "description": "Transport scheme when connected."
+            },
+            "capabilities": {
+              "type": "array",
+              "items": {
+                "type": "string"
+              },
+              "description": "Tool capabilities advertised by the host."
+            }
+          }
+        },
+        "description": "Host inventory records."
+      },
+      "retryable": {
+        "type": "boolean",
+        "description": "Whether a failed call may succeed on retry."
+      },
+      "duration_ms": {
+        "type": [
+          "integer",
+          "null"
+        ],
+        "description": "Host-measured execution time when available, otherwise central dispatch wall time in milliseconds."
+      },
+      "client_id": {
+        "type": [
+          "string",
+          "null"
+        ],
+        "description": "Null for global inventory calls without a host target."
+      },
+      "execution_state": {
+        "type": [
+          "string",
+          "null"
+        ],
+        "description": "Live lifecycle state when the call outlived the sync window (running, queued, ...); null otherwise."
+      },
+      "error": {
+        "type": "object",
+        "additionalProperties": false,
+        "description": "Structured failure detail. Present when status is failed.",
+        "properties": {
+          "code": {
+            "type": "string",
+            "description": "Stable machine-readable error code."
+          },
+          "category": {
+            "type": "string",
+            "enum": [
+              "invalid_argument",
+              "authentication",
+              "authorization",
+              "policy",
+              "not_found",
+              "conflict",
+              "unsupported",
+              "timeout",
+              "transient",
+              "execution",
+              "cancelled",
+              "internal"
+            ],
+            "description": "Public error category for model branching. invalid_argument: Fix the input; do not retry the same call unchanged. authentication: Re-authenticate before retrying. authorization: Insufficient permission; do not retry or attempt to bypass. policy: Rejected by host policy; do not attempt to bypass. Adjust the request or ask an operator. not_found: Resource missing; re-discover the id/path/service/container before retrying. conflict: Conflicting state; re-read the current state, then decide. unsupported: Not supported here; do not retry. Look for an alternative tool or capability. timeout: Timed out; if retryable, wait, then poll with job_get. transient: Transient; retry with backoff if retryable. execution: Execution failure; inspect stdout/stderr/state before retrying. cancelled: Cancelled; do not blindly retry. internal: Internal error; if it reproduces, report it with nc_feedback."
+          },
+          "message": {
+            "type": "string",
+            "description": "Human-readable failure summary."
+          },
+          "retryable": {
+            "type": "boolean",
+            "description": "Whether retrying may succeed (mirrors top-level retryable)."
+          },
+          "suggested_action": {
+            "type": "object",
+            "additionalProperties": false,
+            "description": "Machine-readable recovery hint.",
+            "properties": {
+              "type": {
+                "type": "string",
+                "enum": [
+                  "retry",
+                  "wait",
+                  "change_input",
+                  "reauthorize",
+                  "call_tool",
+                  "contact_operator",
+                  "none"
+                ],
+                "description": "Recovery action type."
+              }
+            },
+            "required": [
+              "type"
+            ]
+          },
+          "details": {
+            "type": "object",
+            "description": "Curated safe context (never secrets, stacks, or internal paths)."
+          }
+        },
+        "required": [
+          "code",
+          "category",
+          "message",
+          "retryable",
+          "suggested_action"
+        ]
+      },
+      "warnings": {
+        "type": "array",
+        "description": "Non-fatal advisory notes. Always present; empty when none.",
+        "items": {
+          "type": "string"
+        }
+      }
+    },
+    "required": [
+      "status",
+      "tool",
+      "client_id",
+      "retryable",
+      "duration_ms",
+      "execution_state",
+      "warnings"
+    ],
+    "additionalProperties": false
+  },
+  "annotations": {
+    "title": "List Hosts",
+    "readOnlyHint": true,
+    "destructiveHint": false,
+    "idempotentHint": true,
+    "openWorldHint": false
+  },
+  "icons": [
+    {
+      "src": "https://nodecommand.app/icons/client_list.svg",
+      "mimeType": "image/svg+xml",
+      "sizes": [
+        "any"
+      ],
+      "theme": "light"
+    }
+  ],
+  "_meta": {
+    "nodecommand.app/execution": {
+      "taskSupport": "forbidden"
+    }
+  }
+}

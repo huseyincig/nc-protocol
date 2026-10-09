@@ -1,0 +1,55 @@
+// Generated bindings — do not hand-edit.
+export const NC_AGENT_PROTOCOL_VERSION = '1.0.0';
+export const MCP_TOOL_CONTRACT_VERSION = '11.19.0';
+export const MCP_TOOL_MANIFEST_FINGERPRINT = 'sha256:fe46c88f904da7989296b8d9e48754aa900f4535e5c40774c71a8c04f0bce4f8';
+export const HOST_POLICY_CONTRACT_VERSION = '1.0.0';
+export const MCP_TOOL_NAMES = Object.freeze([
+  "client_list",
+  "client_ping",
+  "client_enroll",
+  "client_update",
+  "client_uninstall",
+  "client_forget",
+  "system_snapshot",
+  "system_diagnose",
+  "file_read",
+  "file_mutate",
+  "file_browse",
+  "doc_extract",
+  "directory_create",
+  "file_transfer",
+  "file_delete",
+  "log_query",
+  "audit_query",
+  "nc_feedback",
+  "gui_launch",
+  "gui_close",
+  "shell_exec",
+  "privileged_shell_exec",
+  "file_permissions",
+  "job_get",
+  "job_cancel",
+  "disk_usage",
+  "network_connections",
+  "privilege_status",
+  "package_list",
+  "package_manage",
+  "git_inspect",
+  "git_clone",
+  "git_write",
+  "project_inspect",
+  "project_run",
+  "container_read",
+  "container_logs",
+  "compose_list",
+  "compose_op",
+  "result_fetch",
+  "fleet_snapshot",
+  "log_stream",
+  "service_manage",
+  "process_manage",
+  "browser_manage",
+  "nc_playbook"
+]);
+export const HOST_POLICY_CAPABILITY_NAMES = Object.freeze(["automatic_client_updates","browser_downloads","browser_existing_attach","browser_headed","browser_private_network","browser_script_exec","browser_uploads","directory_manage","file_delete","file_move","file_read","file_write","gui_launch","log_read","package_management","privileged_exec","process_inspect","process_terminate","service_control","service_status","shell_exec","system_snapshot"]);
+export const TERMINAL_JOB_STATES = Object.freeze(["completed","failed","timeout","cancelled"]);

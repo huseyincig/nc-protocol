@@ -1,0 +1,324 @@
+{
+  "name": "service_manage",
+  "title": "Manage Services",
+  "description": "Multi-action service management tool. Use action=status to read state, action=start/stop/restart for runtime control, action=enable/disable for autostart persistence. Replaces the retired granular service tools. Read-only for status; mutation for all other actions. Async: poll job_get with the returned job_id. INVALID_SERVICE_OP: check the action; SERVICE_PRIVILEGE_REQUIRED: elevate. STANDARD PROCESS: FIRST status THEN act. IF SERVICE_PRIVILEGE_REQUIRED: reauthorize. DO NOT shell systemctl; route here.",
+  "icons": [
+    {
+      "src": "https://nodecommand.app/icons/service_manage.svg",
+      "mimeType": "image/svg+xml",
+      "sizes": [
+        "any"
+      ],
+      "theme": "light"
+    }
+  ],
+  "inputSchema": {
+    "$schema": "https://json-schema.org/draft/2020-12/schema",
+    "type": "object",
+    "unevaluatedProperties": false,
+    "properties": {
+      "action": {
+        "type": "string",
+        "description": "Discriminator parameter selecting the sub-operation to perform.",
+        "enum": [
+          "status",
+          "start",
+          "stop",
+          "restart",
+          "enable",
+          "disable"
+        ]
+      },
+      "client_id": {
+        "type": "string",
+        "pattern": "^nc_[0-9a-f]{64}$",
+        "minLength": 67,
+        "maxLength": 67,
+        "description": "Target NC client. Absolute routing handle, independent of any connection.",
+        "x-mcp-header": "Client-Id"
+      },
+      "service": {
+        "type": "string",
+        "description": "Service unit name to manage (optional name filter for action=status; required for all other actions).",
+        "minLength": 1,
+        "maxLength": 200
+      },
+      "scope": {
+        "type": "string",
+        "description": "Inventory filter for action=status. Ignored by all other actions.",
+        "enum": [
+          "all",
+          "running",
+          "stopped"
+        ],
+        "default": "all"
+      }
+    },
+    "required": [
+      "action"
+    ],
+    "allOf": [
+      {
+        "if": {
+          "properties": {
+            "action": {
+              "const": "status"
+            }
+          }
+        },
+        "then": {
+          "required": [
+            "client_id"
+          ]
+        }
+      },
+      {
+        "if": {
+          "properties": {
+            "action": {
+              "enum": [
+                "start",
+                "stop",
+                "restart",
+                "enable",
+                "disable"
+              ]
+            }
+          }
+        },
+        "then": {
+          "required": [
+            "client_id",
+            "service"
+          ]
+        }
+      }
+    ]
+  },
+  "outputSchema": {
+    "$schema": "https://json-schema.org/draft/2020-12/schema",
+    "type": "object",
+    "additionalProperties": false,
+    "properties": {
+      "status": {
+        "type": "string",
+        "enum": [
+          "completed",
+          "failed"
+        ],
+        "description": "completed on success, failed on error."
+      },
+      "tool": {
+        "type": "string",
+        "description": "Echo of the invoked tool name."
+      },
+      "client_id": {
+        "type": [
+          "string",
+          "null"
+        ],
+        "description": "Echo of the target host id (null when no host was targeted)."
+      },
+      "action": {
+        "type": "string",
+        "description": "Echo of the executed action discriminator."
+      },
+      "service": {
+        "type": [
+          "string",
+          "null"
+        ],
+        "description": "Service unit the result refers to."
+      },
+      "state": {
+        "type": [
+          "string",
+          "null"
+        ],
+        "description": "Active runtime state after the operation (e.g. running, stopped)."
+      },
+      "boot_mode": {
+        "type": [
+          "string",
+          "null"
+        ],
+        "description": "Boot-persistence state after the operation (e.g. enabled, disabled)."
+      },
+      "pid": {
+        "type": [
+          "integer",
+          "null"
+        ],
+        "description": "Main process id of the service when running; null otherwise."
+      },
+      "services": {
+        "type": "array",
+        "description": "Inventory entries for action=status without a service filter.",
+        "items": {
+          "type": "object",
+          "properties": {
+            "name": {
+              "type": "string"
+            },
+            "state": {
+              "type": "string"
+            }
+          },
+          "required": [
+            "name",
+            "state"
+          ]
+        }
+      },
+      "total_count": {
+        "type": [
+          "integer",
+          "null"
+        ],
+        "description": "Total number of services available before truncation (status without service filter)."
+      },
+      "truncated": {
+        "type": [
+          "boolean",
+          "null"
+        ],
+        "description": "True when more services exist than were returned."
+      },
+      "duration_ms": {
+        "type": [
+          "integer",
+          "null"
+        ],
+        "description": "Operation duration in milliseconds."
+      },
+      "retryable": {
+        "type": "boolean",
+        "description": "Whether a failed call may succeed on retry."
+      },
+      "job_id": {
+        "type": "string",
+        "description": "Server job handle for this execution."
+      },
+      "resource_uri": {
+        "type": "string",
+        "description": "Offload pointer for a large result text (nc://jobs/<jobId>/output). Present only when the envelope text was offloaded; fetch the full text with result_fetch."
+      },
+      "resource_link": {
+        "type": "string",
+        "description": "Programmatic offload reference (mcp:result_fetch:<jobId>). Present only when the envelope text was offloaded."
+      },
+      "resource_bytes": {
+        "type": "integer",
+        "minimum": 0,
+        "description": "Byte size of the offloaded result text. Present only when the envelope text was offloaded."
+      },
+      "execution_state": {
+        "type": [
+          "string",
+          "null"
+        ],
+        "description": "Live lifecycle state when the call outlived the sync window; null otherwise."
+      },
+      "error": {
+        "type": "object",
+        "additionalProperties": false,
+        "description": "Structured failure detail. Present when status is failed.",
+        "properties": {
+          "code": {
+            "type": "string",
+            "description": "Stable machine-readable error code."
+          },
+          "category": {
+            "type": "string",
+            "enum": [
+              "invalid_argument",
+              "authentication",
+              "authorization",
+              "policy",
+              "not_found",
+              "conflict",
+              "unsupported",
+              "timeout",
+              "transient",
+              "execution",
+              "cancelled",
+              "internal"
+            ],
+            "description": "Public error category for model branching. invalid_argument: Fix the input; do not retry the same call unchanged. authentication: Re-authenticate before retrying. authorization: Insufficient permission; do not retry or attempt to bypass. policy: Rejected by host policy; do not attempt to bypass. Adjust the request or ask an operator. not_found: Resource missing; re-discover the id/path/service/container before retrying. conflict: Conflicting state; re-read the current state, then decide. unsupported: Not supported here; do not retry. Look for an alternative tool or capability. timeout: Timed out; if retryable, wait, then poll with job_get. transient: Transient; retry with backoff if retryable. execution: Execution failure; inspect stdout/stderr/state before retrying. cancelled: Cancelled; do not blindly retry. internal: Internal error; if it reproduces, report it with nc_feedback."
+          },
+          "message": {
+            "type": "string",
+            "description": "Human-readable failure summary."
+          },
+          "retryable": {
+            "type": "boolean",
+            "description": "Whether retrying may succeed."
+          },
+          "suggested_action": {
+            "type": "object",
+            "additionalProperties": false,
+            "description": "Machine-readable recovery hint.",
+            "properties": {
+              "type": {
+                "type": "string",
+                "enum": [
+                  "retry",
+                  "wait",
+                  "change_input",
+                  "reauthorize",
+                  "call_tool",
+                  "contact_operator",
+                  "none"
+                ],
+                "description": "Recovery action type."
+              }
+            },
+            "required": [
+              "type"
+            ]
+          },
+          "details": {
+            "type": "object",
+            "description": "Curated safe context."
+          }
+        },
+        "required": [
+          "code",
+          "category",
+          "message",
+          "retryable",
+          "suggested_action"
+        ]
+      },
+      "warnings": {
+        "type": "array",
+        "description": "Non-fatal advisory notes. Always present; empty when none.",
+        "items": {
+          "type": "string"
+        }
+      }
+    },
+    "required": [
+      "status",
+      "tool",
+      "client_id",
+      "action",
+      "retryable",
+      "duration_ms",
+      "execution_state",
+      "warnings"
+    ]
+  },
+  "annotations": {
+    "title": "Manage Services",
+    "readOnlyHint": false,
+    "destructiveHint": true,
+    "idempotentHint": false,
+    "openWorldHint": false
+  },
+  "_meta": {
+    "nodecommand.app/execution": {
+      "taskSupport": "optional"
+    }
+  }
+}
