@@ -30,14 +30,6 @@
           "close"
         ]
       },
-      "client_id": {
-        "type": "string",
-        "pattern": "^nc_[0-9a-f]{64}$",
-        "minLength": 67,
-        "maxLength": 67,
-        "description": "Target NC client. Absolute routing handle, independent of any connection.",
-        "x-mcp-header": "Client-Id"
-      },
       "mode": {
         "type": "string",
         "description": "Session mode for action=create (managed launches NC Chromium; existing attaches over CDP).",
@@ -57,17 +49,6 @@
         "type": "string",
         "pattern": "^brw_[0-9a-f]{32}$",
         "description": "Browser session handle returned by action=create."
-      },
-      "url": {
-        "type": "string",
-        "description": "http(s) URL to navigate to (navigate) or page URL for tab open operations.",
-        "minLength": 1,
-        "maxLength": 4096
-      },
-      "action_type": {
-        "type": "string",
-        "description": "Sub-operation selector for interact/tabs (interact uses click/type/scroll/select/wait; tab actions use list/open/close/switch).",
-        "maxLength": 64
       },
       "selector": {
         "type": "string",
@@ -95,12 +76,6 @@
         "minLength": 1,
         "maxLength": 128
       },
-      "file_path": {
-        "type": "string",
-        "description": "Absolute file path to upload for action=upload.",
-        "minLength": 1,
-        "maxLength": 4096
-      },
       "timeout_ms": {
         "type": "integer",
         "description": "Optional timeout override in milliseconds.",
@@ -121,6 +96,15 @@
           }
         },
         "then": {
+          "properties": {
+            "client_id": {
+              "type": "string",
+              "pattern": "^nc_[0-9a-f]{64}$",
+              "minLength": 67,
+              "maxLength": 67,
+              "description": "Target NC client. Absolute routing handle, independent of any connection."
+            }
+          },
           "required": [
             "client_id"
           ]
@@ -135,6 +119,18 @@
           }
         },
         "then": {
+          "properties": {
+            "client_id": {
+              "type": "string",
+              "pattern": "^nc_[0-9a-f]{64}$"
+            },
+            "url": {
+              "type": "string",
+              "description": "http(s) URL to navigate to.",
+              "minLength": 1,
+              "maxLength": 4096
+            }
+          },
           "required": [
             "browser_id",
             "url"
@@ -151,10 +147,9 @@
         },
         "then": {
           "properties": {
-            "browser_id": {
+            "client_id": {
               "type": "string",
-              "pattern": "^brw_[0-9a-f]{32}$",
-              "description": "Browser session handle returned by action=create."
+              "pattern": "^nc_[0-9a-f]{64}$"
             },
             "action_type": {
               "type": "string",
@@ -166,12 +161,6 @@
                 "wait"
               ],
               "description": "Interaction to perform on the selected element."
-            },
-            "selector": {
-              "type": "string",
-              "description": "Element selector for action=interact, action=inspect (optional), and action=upload.",
-              "minLength": 1,
-              "maxLength": 4096
             }
           },
           "required": [
@@ -190,6 +179,12 @@
           }
         },
         "then": {
+          "properties": {
+            "client_id": {
+              "type": "string",
+              "pattern": "^nc_[0-9a-f]{64}$"
+            }
+          },
           "required": [
             "browser_id"
           ]
@@ -205,10 +200,9 @@
         },
         "then": {
           "properties": {
-            "browser_id": {
+            "client_id": {
               "type": "string",
-              "pattern": "^brw_[0-9a-f]{32}$",
-              "description": "Browser session handle returned by action=create."
+              "pattern": "^nc_[0-9a-f]{64}$"
             },
             "action_type": {
               "type": "string",
@@ -220,6 +214,16 @@
               ],
               "default": "list",
               "description": "Tab operation (defaults to list)."
+            },
+            "url": {
+              "type": "string",
+              "description": "Page URL for action_type=open.",
+              "maxLength": 4096
+            },
+            "tab_id": {
+              "type": "string",
+              "description": "Tab handle for action_type=close/switch.",
+              "maxLength": 128
             }
           },
           "required": [
@@ -236,6 +240,18 @@
           }
         },
         "then": {
+          "properties": {
+            "client_id": {
+              "type": "string",
+              "pattern": "^nc_[0-9a-f]{64}$"
+            },
+            "file_path": {
+              "type": "string",
+              "description": "Absolute file path to upload.",
+              "minLength": 1,
+              "maxLength": 4096
+            }
+          },
           "required": [
             "browser_id",
             "selector",
@@ -252,6 +268,12 @@
           }
         },
         "then": {
+          "properties": {
+            "client_id": {
+              "type": "string",
+              "pattern": "^nc_[0-9a-f]{64}$"
+            }
+          },
           "required": [
             "browser_id"
           ]

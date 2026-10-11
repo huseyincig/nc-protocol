@@ -1,0 +1,33 @@
+{
+  "name": "nc-protocol",
+  "version": "11.22.0",
+  "description": "Public wire contracts, MCP tool schemas, and protocol definitions for Node Command",
+  "type": "module",
+  "license": "Apache-2.0",
+  "main": "bindings/javascript/contracts.mjs",
+  "exports": {
+    ".": "./bindings/javascript/contracts.mjs",
+    "./mcp/*": "./mcp/*",
+    "./agent/*": "./agent/*",
+    "./policy/*": "./policy/*",
+    "./browser/*": "./browser/*"
+  },
+  "files": [
+    "agent",
+    "bindings",
+    "browser",
+    "mcp",
+    "policy",
+    "README.md",
+    "LICENSE",
+    "COMPATIBILITY.md",
+    "VERSIONING.md",
+    "CONTRIBUTING.md"
+  ],
+  "scripts": {
+    "test": "node --test tests/*.mjs"
+  },
+  "engines": {
+    "node": ">=22"
+  }
+}

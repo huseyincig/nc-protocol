@@ -45,40 +45,6 @@
         ],
         "default": "managed"
       },
-      "limit": {
-        "type": "integer",
-        "description": "Maximum entries to return for action=list.",
-        "minimum": 1,
-        "maximum": 1000,
-        "default": 200
-      },
-      "command": {
-        "type": "array",
-        "description": "Argument vector for action=start (binary plus verbatim args, no shell parsing).",
-        "minItems": 1,
-        "maxItems": 64,
-        "items": {
-          "type": "string",
-          "maxLength": 4096
-        }
-      },
-      "working_directory": {
-        "type": "string",
-        "description": "Absolute working directory for action=start.",
-        "minLength": 1,
-        "maxLength": 4096
-      },
-      "env": {
-        "type": "object",
-        "description": "Extra environment variables for action=start.",
-        "additionalProperties": {
-          "type": "string"
-        },
-        "maxProperties": 256,
-        "propertyNames": {
-          "maxLength": 256
-        }
-      },
       "pid": {
         "type": "integer",
         "description": "OS process id reported by action=start (convenience alias; the handle is authoritative).",
@@ -105,12 +71,6 @@
         "minimum": 1,
         "maximum": 262144,
         "default": 65536
-      },
-      "data": {
-        "type": "string",
-        "description": "Stdin payload to deliver to the process for action=input.",
-        "minLength": 1,
-        "maxLength": 65536
       }
     },
     "required": [
@@ -126,6 +86,15 @@
           }
         },
         "then": {
+          "properties": {
+            "limit": {
+              "type": "integer",
+              "description": "Maximum entries to return for action=list.",
+              "minimum": 1,
+              "maximum": 1000,
+              "default": 200
+            }
+          },
           "required": [
             "client_id"
           ]
@@ -140,6 +109,35 @@
           }
         },
         "then": {
+          "properties": {
+            "command": {
+              "type": "array",
+              "description": "Argument vector for action=start (binary plus verbatim args, no shell parsing).",
+              "minItems": 1,
+              "maxItems": 64,
+              "items": {
+                "type": "string",
+                "maxLength": 4096
+              }
+            },
+            "working_directory": {
+              "type": "string",
+              "description": "Absolute working directory for action=start.",
+              "minLength": 1,
+              "maxLength": 4096
+            },
+            "env": {
+              "type": "object",
+              "description": "Extra environment variables for action=start.",
+              "additionalProperties": {
+                "type": "string"
+              },
+              "maxProperties": 256,
+              "propertyNames": {
+                "maxLength": 256
+              }
+            }
+          },
           "required": [
             "client_id",
             "command"
@@ -184,6 +182,14 @@
           }
         },
         "then": {
+          "properties": {
+            "data": {
+              "type": "string",
+              "description": "Stdin payload to deliver to the process for action=input.",
+              "minLength": 1,
+              "maxLength": 65536
+            }
+          },
           "required": [
             "client_id",
             "data"

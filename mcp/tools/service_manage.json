@@ -37,12 +37,6 @@
         "description": "Target NC client. Absolute routing handle, independent of any connection.",
         "x-mcp-header": "Client-Id"
       },
-      "service": {
-        "type": "string",
-        "description": "Service unit name to manage (optional name filter for action=status; required for all other actions).",
-        "minLength": 1,
-        "maxLength": 200
-      },
       "scope": {
         "type": "string",
         "description": "Inventory filter for action=status. Ignored by all other actions.",
@@ -67,6 +61,14 @@
           }
         },
         "then": {
+          "properties": {
+            "service": {
+              "type": "string",
+              "description": "Optional name filter; omit to list the full inventory.",
+              "minLength": 1,
+              "maxLength": 200
+            }
+          },
           "required": [
             "client_id"
           ]
@@ -87,6 +89,15 @@
           }
         },
         "then": {
+          "properties": {
+            "service": {
+              "type": "string",
+              "description": "Service unit name to manage (optional name filter for action=status; required for all other actions).",
+              "minLength": 1,
+              "maxLength": 128,
+              "pattern": "^[A-Za-z0-9_@.][\\w@.\\-:]{0,127}$"
+            }
+          },
           "required": [
             "client_id",
             "service"

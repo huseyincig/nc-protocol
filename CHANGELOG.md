@@ -1,5 +1,13 @@
 # Changelog
 
+## 11.22.0 — 2026-10-11
+
+- MCP Tool Contract 11.22.0 release (46 tools, fingerprint `sha256:6f3394c5fac6157037a21120fe6e20697a679902595c35baaf3c1dae062f0dfc`).
+- Unhoist action-specific parameters into branch `then.properties` for multi-action tools (`process_manage`, `browser_manage`, `log_stream`, `service_manage`, `nc_playbook`).
+- Add mode pattern to `file_permissions` chmod operations.
+- Update tool manifests, JSON Schema draft-07 validations, and JavaScript contract bindings.
+
+
 ## 5.10.10 — 2026-09-10
 
 PATCH, 51 tools, description-only (no schema shape changes):

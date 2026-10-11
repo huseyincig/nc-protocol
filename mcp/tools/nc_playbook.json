@@ -25,12 +25,6 @@
           "get",
           "execute"
         ]
-      },
-      "name": {
-        "type": "string",
-        "description": "Playbook name to fetch or execute. Required for action=get and action=execute, ignored for action=list.",
-        "minLength": 1,
-        "maxLength": 128
       }
     },
     "required": [
@@ -48,6 +42,9 @@
         "then": {
           "properties": {
             "name": {
+              "type": "string",
+              "minLength": 1,
+              "maxLength": 128,
               "description": "Ignored for action=list; omit to list the full catalog."
             }
           }
@@ -65,6 +62,14 @@
           }
         },
         "then": {
+          "properties": {
+            "name": {
+              "type": "string",
+              "description": "Playbook name to fetch or execute.",
+              "minLength": 1,
+              "maxLength": 128
+            }
+          },
           "required": [
             "name"
           ]

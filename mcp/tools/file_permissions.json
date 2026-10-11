@@ -59,6 +59,7 @@
             "mode": {
               "type": "string",
               "description": "Permission mode in octal (e.g. '0644', '0755') or symbolic (e.g. '+x', 'u+w') format.",
+              "pattern": "^[0-7]{3,4}$|^[ugoa]*[+-=][rwxXst]+$",
               "minLength": 1,
               "maxLength": 32
             },

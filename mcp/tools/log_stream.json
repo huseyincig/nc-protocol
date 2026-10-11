@@ -26,14 +26,6 @@
           "read"
         ]
       },
-      "client_id": {
-        "type": "string",
-        "pattern": "^nc_[0-9a-f]{64}$",
-        "minLength": 67,
-        "maxLength": 67,
-        "description": "Target NC client. Absolute routing handle, independent of any connection.",
-        "x-mcp-header": "Client-Id"
-      },
       "source": {
         "type": "string",
         "enum": [
@@ -89,6 +81,24 @@
           }
         },
         "then": {
+          "properties": {
+            "client_id": {
+              "type": "string",
+              "pattern": "^nc_[0-9a-f]{64}$",
+              "minLength": 67,
+              "maxLength": 67,
+              "description": "Target NC client. Absolute routing handle, independent of any connection."
+            },
+            "source": {
+              "type": "string",
+              "enum": [
+                "client",
+                "mcp-server",
+                "mcp-tunnel"
+              ],
+              "description": "Named log source. Ignored when path is given."
+            }
+          },
           "required": [
             "client_id",
             "source"
@@ -104,6 +114,20 @@
           }
         },
         "then": {
+          "properties": {
+            "client_id": {
+              "type": "string",
+              "pattern": "^nc_[0-9a-f]{64}$",
+              "minLength": 67,
+              "maxLength": 67,
+              "description": "Optional routing hint. The handle alone is sufficient to release the stream."
+            },
+            "handle": {
+              "type": "string",
+              "pattern": "^log_[0-9a-f]{32}$",
+              "description": "Opaque log-stream handle returned by action=start."
+            }
+          },
           "required": [
             "handle"
           ]
@@ -118,6 +142,20 @@
           }
         },
         "then": {
+          "properties": {
+            "client_id": {
+              "type": "string",
+              "pattern": "^nc_[0-9a-f]{64}$",
+              "minLength": 67,
+              "maxLength": 67,
+              "description": "Optional routing hint. The handle alone is sufficient to poll the stream."
+            },
+            "handle": {
+              "type": "string",
+              "pattern": "^log_[0-9a-f]{32}$",
+              "description": "Opaque log-stream handle returned by action=start."
+            }
+          },
           "required": [
             "handle"
           ]
