@@ -1,16 +1,6 @@
 {
-  "_meta": {
-    "nodecommand.app/execution": {
-      "taskSupport": "forbidden"
-    }
-  },
-  "annotations": {
-    "destructiveHint": false,
-    "idempotentHint": true,
-    "openWorldHint": false,
-    "readOnlyHint": true,
-    "title": "Extract Document Text"
-  },
+  "name": "doc_extract",
+  "title": "Extract Document Text",
   "description": "Extracts readable text from office documents on a client: DOCX word processing files, XLSX spreadsheets rendered as tab-separated rows, and text-based PDFs. Format is detected from file content with an optional explicit hint. Encrypted PDFs and unsupported containers fail loudly instead of returning empty text. Output is bounded by max_chars. Async: poll job_get with the returned job_id. No text in scanned PDFs. REQUIRED: 1. target DOCX/XLSX/text-PDF 2. extract. IF DOC_UNSUPPORTED_FORMAT: convert to DOCX. DO NOT expect OCR; scanned PDFs fail.",
   "inputSchema": {
     "$schema": "https://json-schema.org/draft/2020-12/schema",
@@ -55,7 +45,6 @@
     ],
     "type": "object"
   },
-  "name": "doc_extract",
   "outputSchema": {
     "$schema": "https://json-schema.org/draft/2020-12/schema",
     "additionalProperties": false,
@@ -259,5 +248,26 @@
     ],
     "type": "object"
   },
-  "title": "Extract Document Text"
+  "annotations": {
+    "destructiveHint": false,
+    "idempotentHint": true,
+    "openWorldHint": false,
+    "readOnlyHint": true,
+    "title": "Extract Document Text"
+  },
+  "icons": [
+    {
+      "src": "https://nodecommand.app/icons/doc_extract.svg",
+      "mimeType": "image/svg+xml",
+      "sizes": [
+        "any"
+      ],
+      "theme": "light"
+    }
+  ],
+  "_meta": {
+    "nodecommand.app/execution": {
+      "taskSupport": "forbidden"
+    }
+  }
 }

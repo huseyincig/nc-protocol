@@ -1,7 +1,7 @@
 {
   "name": "browser_manage",
   "title": "Manage Browser",
-  "description": "Multi-action browser automation: create a session, then navigate, interact, inspect, manage tabs, upload, or close. Replaces the retired browser tools. Use action=tabs for tab operations (lists by default; open/close/switch to change tabs). Read-only for inspect and tab listing; mutation otherwise. Async: poll job_get with the returned job_id. INVALID_SESSION_ID: create again; GUI apps belong in gui_launch. REQUIRED: 1. create, then drive, then close. IF BROWSER_DIALOG_BLOCKED: dismiss modal, retry. DO NOT curl pages; sessions drive here.",
+  "description": "Multi-action browser automation: create a session, then navigate, interact, inspect, manage tabs, upload, or close. Replaces the retired browser tools. Use action=tabs for tab operations (lists by default; open/close/switch to change tabs). Read-only for inspect and tab listing; mutation otherwise. Async: poll nc_job_get with the returned job_id. INVALID_SESSION_ID: create again; GUI apps belong in nc_gui_manage action=launch. REQUIRED: 1. create, then drive, then close. IF BROWSER_DIALOG_BLOCKED: dismiss modal, retry. DO NOT curl pages; sessions drive here.",
   "icons": [
     {
       "src": "https://nodecommand.app/icons/browser_manage.svg",
@@ -395,7 +395,7 @@
       },
       "resource_uri": {
         "type": "string",
-        "description": "Offload pointer for a large result text (nc://jobs/<jobId>/output). Present only when the envelope text was offloaded; fetch the full text with result_fetch."
+        "description": "Offload pointer for a large result text (nc://jobs/<jobId>/output). Present only when the envelope text was offloaded; fetch the full text with nc_result_fetch."
       },
       "resource_link": {
         "type": "string",
@@ -438,7 +438,7 @@
               "cancelled",
               "internal"
             ],
-            "description": "Public error category for model branching. invalid_argument: Fix the input; do not retry the same call unchanged. authentication: Re-authenticate before retrying. authorization: Insufficient permission; do not retry or attempt to bypass. policy: Rejected by host policy; do not attempt to bypass. Adjust the request or ask an operator. not_found: Resource missing; re-discover the id/path/service/container before retrying. conflict: Conflicting state; re-read the current state, then decide. unsupported: Not supported here; do not retry. Look for an alternative tool or capability. timeout: Timed out; if retryable, wait, then poll with job_get. transient: Transient; retry with backoff if retryable. execution: Execution failure; inspect stdout/stderr/state before retrying. cancelled: Cancelled; do not blindly retry. internal: Internal error; if it reproduces, report it with nc_feedback."
+            "description": "Public error category for model branching. invalid_argument: Fix the input; do not retry the same call unchanged. authentication: Re-authenticate before retrying. authorization: Insufficient permission; do not retry or attempt to bypass. policy: Rejected by host policy; do not attempt to bypass. Adjust the request or ask an operator. not_found: Resource missing; re-discover the id/path/service/container before retrying. conflict: Conflicting state; re-read the current state, then decide. unsupported: Not supported here; do not retry. Look for an alternative tool or capability. timeout: Timed out; if retryable, wait, then poll with nc_job_get. transient: Transient; retry with backoff if retryable. execution: Execution failure; inspect stdout/stderr/state before retrying. cancelled: Cancelled; do not blindly retry. internal: Internal error; if it reproduces, report it with nc_feedback."
           },
           "message": {
             "type": "string",

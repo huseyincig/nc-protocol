@@ -1,5 +1,18 @@
 # Changelog
 
+## 12.1.0 — 2026-10-28
+
+- Synchronize the public repository with the platform's current canonical MCP
+  contract: 52 authoring definitions, composed into 28 role-filtered public tools.
+- Include the Contract 12 prelaunch direct cutover; retired public names are not
+  compatibility aliases. Internal leaf identifiers and agent wire contracts remain.
+- Correct the symbolic permission operator character class and permit empty
+  single-edit replacements while retaining nonempty expected text and mutation guards.
+- Clarify project `run` arguments, public versus internal audit tool names, and
+  actual log-stream source, routing-hint and bounded-read behavior.
+- The authoritative release fingerprint is in `mcp/fingerprint`; JavaScript
+  bindings and manifest inventory are synchronized with the same definitions.
+
 ## 11.22.0 — 2026-10-11
 
 - MCP Tool Contract 11.22.0 release (46 tools, fingerprint `sha256:6f3394c5fac6157037a21120fe6e20697a679902595c35baaf3c1dae062f0dfc`).

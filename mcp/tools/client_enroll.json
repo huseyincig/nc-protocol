@@ -14,11 +14,11 @@
         "type": "string",
         "enum": [
           "any",
-          "windows",
           "linux",
-          "macos"
+          "darwin",
+          "win32"
         ],
-        "description": "Target platform for the enrollment instructions."
+        "description": "Target platform for the enrollment instructions. Canonical values are linux, darwin, and win32. NOTE - the runtime enrollment allowlist still gates on the legacy display aliases (windows/macos) and must be widened to this canonical set."
       },
       "name": {
         "type": "string",

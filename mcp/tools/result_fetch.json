@@ -1,7 +1,7 @@
 {
   "name": "result_fetch",
   "title": "Fetch Offloaded Result",
-  "description": "Reads back offloaded result texts by job id (see resource_uri on large envelopes). Accepts up to 10 ids per call with per-item partial-failure results. Entries expire 15 minutes after the producing call and are tenant-isolated. Async: poll job_get with the returned job_id. RESULT_EXPIRED: entries live 15 minutes, re-run the producer. REQUIRED: 1. batch ids, max 10 2. fetch. IF RESULT_EXPIRED: rerun the job. DO NOT hoard ids; payloads expire.",
+  "description": "Read tenant-isolated offloaded result text using job_ids (up to 10), identified by resource_uri on a large envelope. Per-item partial failures are returned; entries expire 15 minutes after the producing call. Poll nc_job_get for unfinished jobs instead of restarting them. On RESULT_EXPIRED, report the missing output; only reissue a safe authorized read when useful, never repeat a mutation merely to recover text. Keep concise conclusions, not raw outputs, in nc_work_context.",
   "inputSchema": {
     "$schema": "https://json-schema.org/draft/2020-12/schema",
     "type": "object",
@@ -40,7 +40,7 @@
           "string",
           "null"
         ],
-        "description": "Always null: result_fetch targets stored results, not a host."
+        "description": "Always null: nc_result_fetch targets stored results, not a host."
       },
       "job_id": {
         "type": "string",
@@ -48,7 +48,7 @@
       },
       "resource_uri": {
         "type": "string",
-        "description": "Offload pointer for a large result text (nc://jobs/<jobId>/output). Present only when the envelope text was offloaded; fetch the full text with result_fetch."
+        "description": "Offload pointer for a large result text (nc://jobs/<jobId>/output). Present only when the envelope text was offloaded; fetch the full text with nc_result_fetch."
       },
       "resource_link": {
         "type": "string",
@@ -148,7 +148,7 @@
               "cancelled",
               "internal"
             ],
-            "description": "Public error category for model branching. invalid_argument: Fix the input; do not retry the same call unchanged. authentication: Re-authenticate before retrying. authorization: Insufficient permission; do not retry or attempt to bypass. policy: Rejected by host policy; do not attempt to bypass. Adjust the request or ask an operator. not_found: Resource missing; re-discover the id/path/service/container before retrying. conflict: Conflicting state; re-read the current state, then decide. unsupported: Not supported here; do not retry. Look for an alternative tool or capability. timeout: Timed out; if retryable, wait, then poll with job_get. transient: Transient; retry with backoff if retryable. execution: Execution failure; inspect stdout/stderr/state before retrying. cancelled: Cancelled; do not blindly retry. internal: Internal error; if it reproduces, report it with nc_feedback."
+            "description": "Public error category for model branching. invalid_argument: Fix the input; do not retry the same call unchanged. authentication: Re-authenticate before retrying. authorization: Insufficient permission; do not retry or attempt to bypass. policy: Rejected by host policy; do not attempt to bypass. Adjust the request or ask an operator. not_found: Resource missing; re-discover the id/path/service/container before retrying. conflict: Conflicting state; re-read the current state, then decide. unsupported: Not supported here; do not retry. Look for an alternative tool or capability. timeout: Timed out; if retryable, wait, then poll with nc_job_get. transient: Transient; retry with backoff if retryable. execution: Execution failure; inspect stdout/stderr/state before retrying. cancelled: Cancelled; do not blindly retry. internal: Internal error; if it reproduces, report it with nc_feedback."
           },
           "message": {
             "type": "string",

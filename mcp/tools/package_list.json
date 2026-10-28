@@ -1,7 +1,7 @@
 {
   "name": "package_list",
   "title": "List Packages",
-  "description": "Lists installed packages across system managers plus brew and registry entries. Use this for inventory; to change state use package_manage instead. Narrow with contains. Async: poll job_get with the returned job_id. Empty: broaden the term, managers differ per OS. State changes belong in package_manage. REQUIRED: 1. list all managers 2. freeze. IF HOST_OFFLINE: retry after reconnect. DO NOT mutate here; package_manage changes state.",
+  "description": "Lists installed packages for one system manager (auto picks the first available) plus brew and registry entries. Use this for inventory; to change state use package_manage instead. Narrow with contains. Async: poll job_get with the returned job_id. Empty: broaden the term, managers differ per OS. State changes belong in package_manage. REQUIRED: 1. query specific manager if auto misses it 2. freeze. IF CLIENT_OFFLINE: retry after reconnect. DO NOT mutate here; package_manage changes state.",
   "inputSchema": {
     "$schema": "https://json-schema.org/draft/2020-12/schema",
     "type": "object",
@@ -26,10 +26,11 @@
           "dnf",
           "apk",
           "pacman",
+          "zypper",
           "winget",
           "brew"
         ],
-        "description": "Package manager to query. Defaults to auto (first available on the host)."
+        "description": "Package manager to query. Defaults to auto (first available on the host). yum is not accepted - pass dnf on rpm-backed hosts. choco is not accepted - Windows uses winget."
       },
       "contains": {
         "type": "string",

@@ -1,7 +1,7 @@
 {
   "name": "system_snapshot",
   "title": "System Snapshot",
-  "description": "Returns a compact read-only host system snapshot: hostname, platform, arch, OS release, uptime, CPU count with load averages, and total/free memory. Prefer this over shell commands when only host status is needed. Async: poll job_get with the returned job_id. Use system_diagnose to analyze this snapshot for bottlenecks. SNAPSHOT_CREATION_FAILED: retry once; CLIENT_BUSY: wait, then poll job_get. REQUIRED: 1. target client_id 2. read snapshot. IF CLIENT_BUSY: back off, retry. DO NOT loop per host; fleet_snapshot batches.",
+  "description": "Returns a compact read-only host system snapshot: hostname, platform, arch, OS release, uptime, CPU count with load averages, and total/free memory. Prefer this over shell commands when only host status is needed. Async: poll job_get with the returned job_id. Use system_diagnose to analyze this snapshot for bottlenecks. If the snapshot fails: retry once; CLIENT_BUSY: wait, then poll job_get. REQUIRED: 1. target client_id 2. read snapshot. IF CLIENT_BUSY: back off, retry. DO NOT loop per host; fleet_snapshot batches.",
   "inputSchema": {
     "$schema": "https://json-schema.org/draft/2020-12/schema",
     "type": "object",

@@ -1,7 +1,7 @@
 {
   "name": "audit_query",
   "title": "Search Audit Events",
-  "description": "Reads the caller tenant audit trail with filters. Read-only introspection over the platform audit chain. Note: tool executions are recorded under action \"tool.execute\" with the tool name in payload.tool — filter by action \"tool.execute\", not by tool name. Empty rows: filter action='tool.execute' with the tool in payload.tool. REQUIRED: 1. set filters 2. page results. IF INVALID_ARGUMENT: tighten filters. DO NOT use log_query; audit chain lives here.",
+  "description": "Reads the caller tenant audit trail with filters. Read-only introspection over the platform audit chain. Tool executions are recorded under action \"tool.execute\": payload.requested_tool identifies the requested public tool, while payload.tool identifies the internal operation. Filter by action_filter=\"tool.execute\", then inspect returned payloads for tool identity; there is no tool-name filter. REQUIRED: 1. set filters 2. page results. IF INVALID_ARGUMENT: tighten filters. DO NOT use nc_log_query; audit chain lives here.",
   "inputSchema": {
     "$schema": "https://json-schema.org/draft/2020-12/schema",
     "type": "object",
@@ -37,7 +37,7 @@
       },
       "action_filter": {
         "type": "string",
-        "description": "Filter by action name (e.g. \"tool.execute\" for tool calls; the tool name itself lives in payload.tool).",
+        "description": "Filter by action name (e.g. \"tool.execute\" for tool calls); inspect payload.requested_tool for the public tool name and payload.tool for the internal operation.",
         "maxLength": 128
       }
     },
@@ -214,7 +214,7 @@
               "cancelled",
               "internal"
             ],
-            "description": "Public error category for model branching. invalid_argument: Fix the input; do not retry the same call unchanged. authentication: Re-authenticate before retrying. authorization: Insufficient permission; do not retry or attempt to bypass. policy: Rejected by host policy; do not attempt to bypass. Adjust the request or ask an operator. not_found: Resource missing; re-discover the id/path/service/container before retrying. conflict: Conflicting state; re-read the current state, then decide. unsupported: Not supported here; do not retry. Look for an alternative tool or capability. timeout: Timed out; if retryable, wait, then poll with job_get. transient: Transient; retry with backoff if retryable. execution: Execution failure; inspect stdout/stderr/state before retrying. cancelled: Cancelled; do not blindly retry. internal: Internal error; if it reproduces, report it with nc_feedback."
+            "description": "Public error category for model branching. invalid_argument: Fix the input; do not retry the same call unchanged. authentication: Re-authenticate before retrying. authorization: Insufficient permission; do not retry or attempt to bypass. policy: Rejected by host policy; do not attempt to bypass. Adjust the request or ask an operator. not_found: Resource missing; re-discover the id/path/service/container before retrying. conflict: Conflicting state; re-read the current state, then decide. unsupported: Not supported here; do not retry. Look for an alternative tool or capability. timeout: Timed out; if retryable, wait, then poll with nc_job_get. transient: Transient; retry with backoff if retryable. execution: Execution failure; inspect stdout/stderr/state before retrying. cancelled: Cancelled; do not blindly retry. internal: Internal error; if it reproduces, report it with nc_feedback."
           },
           "message": {
             "type": "string",

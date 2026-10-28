@@ -1,7 +1,7 @@
 // Generated bindings — do not hand-edit.
 export const NC_AGENT_PROTOCOL_VERSION = '1.0.0';
-export const MCP_TOOL_CONTRACT_VERSION = '11.22.0';
-export const MCP_TOOL_MANIFEST_FINGERPRINT = 'sha256:6f3394c5fac6157037a21120fe6e20697a679902595c35baaf3c1dae062f0dfc';
+export const MCP_TOOL_CONTRACT_VERSION = '12.1.0';
+export const MCP_TOOL_MANIFEST_FINGERPRINT = 'sha256:c26b49d2a44d085111f63ab9f330af99fdb10de6dfe5d673937a1e0a42d4ca3f';
 export const HOST_POLICY_CONTRACT_VERSION = '1.0.0';
 export const MCP_TOOL_NAMES = Object.freeze([
   "client_list",
@@ -49,7 +49,13 @@ export const MCP_TOOL_NAMES = Object.freeze([
   "service_manage",
   "process_manage",
   "browser_manage",
-  "nc_playbook"
+  "nc_playbook",
+  "client_query",
+  "file_content",
+  "gui_manage",
+  "host_inspect",
+  "project_manage",
+  "work_context"
 ]);
 export const HOST_POLICY_CAPABILITY_NAMES = Object.freeze(["automatic_client_updates","browser_downloads","browser_existing_attach","browser_headed","browser_private_network","browser_script_exec","browser_uploads","directory_manage","file_delete","file_move","file_read","file_write","gui_launch","log_read","package_management","privileged_exec","process_inspect","process_terminate","service_control","service_status","shell_exec","system_snapshot"]);
 export const TERMINAL_JOB_STATES = Object.freeze(["completed","failed","timeout","cancelled"]);

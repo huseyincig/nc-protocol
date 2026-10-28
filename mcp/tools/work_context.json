@@ -1,0 +1,941 @@
+{
+  "name": "work_context",
+  "title": "Work Context",
+  "description": "Save a private checkpoint on client_id at meaningful milestones; resume reads it without executing; list discovers yours; delete removes it. save needs objective, completed_steps and next_step; updating needs context_id plus expected_revision. Store no secrets, transcripts or raw output. Bounds: 8 KiB scrubbed record, 20 active per caller/tenant, 7 days idle/30 days absolute; at most 10 job_refs and 10 handle_refs. Current host access is always rechecked; stale references stay unavailable. Resume then use nc_job_get/nc_process_manage/nc_browser_manage/nc_log_stream normally, never replay automatically.",
+  "icons": [
+    {
+      "src": "https://nodecommand.app/icons/nc_playbook.svg",
+      "mimeType": "image/svg+xml",
+      "sizes": [
+        "any"
+      ],
+      "theme": "light"
+    }
+  ],
+  "inputSchema": {
+    "$schema": "https://json-schema.org/draft/2020-12/schema",
+    "type": "object",
+    "unevaluatedProperties": false,
+    "properties": {
+      "action": {
+        "type": "string",
+        "description": "save/delete require write scope; list/resume require read scope.",
+        "enum": [
+          "save",
+          "resume",
+          "list",
+          "delete"
+        ]
+      },
+      "client_id": {
+        "type": "string",
+        "pattern": "^nc_[0-9a-f]{64}$",
+        "minLength": 67,
+        "maxLength": 67,
+        "description": "Target NC client. Absolute routing handle, independent of any connection.",
+        "x-mcp-header": "Client-Id"
+      }
+    },
+    "required": [
+      "action",
+      "client_id"
+    ],
+    "allOf": [
+      {
+        "if": {
+          "properties": {
+            "action": {
+              "const": "save"
+            }
+          },
+          "required": [
+            "action"
+          ]
+        },
+        "then": {
+          "properties": {
+            "objective": {
+              "type": "string",
+              "description": "Concise objective without secrets or raw output.",
+              "minLength": 1,
+              "maxLength": 512
+            },
+            "project_dir": {
+              "type": "string",
+              "description": "Optional project location; a hint, not path authority.",
+              "minLength": 1,
+              "maxLength": 4096
+            },
+            "completed_steps": {
+              "type": "array",
+              "description": "Concise completed milestones, not transcripts.",
+              "items": {
+                "type": "string",
+                "description": "Completed milestone.",
+                "minLength": 1,
+                "maxLength": 256
+              },
+              "minItems": 0,
+              "maxItems": 20
+            },
+            "next_step": {
+              "type": "string",
+              "description": "Next intended step; resume never executes it.",
+              "minLength": 1,
+              "maxLength": 512
+            },
+            "job_refs": {
+              "type": "array",
+              "description": "Existing visible job identifiers on this client; never job outputs.",
+              "items": {
+                "type": "string",
+                "description": "Existing job identifier.",
+                "minLength": 1,
+                "maxLength": 128
+              },
+              "minItems": 0,
+              "maxItems": 10
+            },
+            "handle_refs": {
+              "type": "array",
+              "description": "Existing visible typed handles on this client; no execution state or credentials.",
+              "items": {
+                "type": "object",
+                "description": "Execution reference, not authority.",
+                "additionalProperties": false,
+                "properties": {
+                  "kind": {
+                    "type": "string",
+                    "description": "Handle family.",
+                    "minLength": 1,
+                    "maxLength": 7,
+                    "enum": [
+                      "process",
+                      "browser",
+                      "log"
+                    ]
+                  },
+                  "handle": {
+                    "type": "string",
+                    "description": "Existing opaque handle.",
+                    "minLength": 1,
+                    "maxLength": 256
+                  }
+                },
+                "required": [
+                  "kind",
+                  "handle"
+                ]
+              },
+              "minItems": 0,
+              "maxItems": 10
+            },
+            "context_id": {
+              "type": "string",
+              "description": "Server-generated private checkpoint identifier.",
+              "minLength": 1,
+              "maxLength": 128,
+              "pattern": "^ctx_[A-Za-z0-9_-]+$"
+            },
+            "expected_revision": {
+              "type": "integer",
+              "description": "Monotonic checkpoint revision.",
+              "minimum": 1,
+              "maximum": 9007199254740991
+            }
+          },
+          "required": [
+            "objective",
+            "completed_steps",
+            "next_step"
+          ],
+          "allOf": [
+            {
+              "if": {
+                "required": [
+                  "context_id"
+                ]
+              },
+              "then": {
+                "required": [
+                  "expected_revision"
+                ]
+              },
+              "else": {
+                "not": {
+                  "required": [
+                    "expected_revision"
+                  ]
+                }
+              }
+            }
+          ]
+        }
+      },
+      {
+        "if": {
+          "properties": {
+            "action": {
+              "const": "resume"
+            }
+          },
+          "required": [
+            "action"
+          ]
+        },
+        "then": {
+          "properties": {
+            "context_id": {
+              "type": "string",
+              "description": "Server-generated private checkpoint identifier.",
+              "minLength": 1,
+              "maxLength": 128,
+              "pattern": "^ctx_[A-Za-z0-9_-]+$"
+            }
+          },
+          "required": [
+            "context_id"
+          ]
+        }
+      },
+      {
+        "if": {
+          "properties": {
+            "action": {
+              "const": "list"
+            }
+          },
+          "required": [
+            "action"
+          ]
+        },
+        "then": {
+          "properties": {
+            "limit": {
+              "type": "integer",
+              "description": "Maximum summaries, after private host/tenant/caller filtering.",
+              "minimum": 1,
+              "maximum": 20
+            },
+            "offset": {
+              "type": "integer",
+              "description": "Number of matching summaries to skip; listing never renews expiry.",
+              "minimum": 0,
+              "maximum": 20
+            }
+          },
+          "required": []
+        }
+      },
+      {
+        "if": {
+          "properties": {
+            "action": {
+              "const": "delete"
+            }
+          },
+          "required": [
+            "action"
+          ]
+        },
+        "then": {
+          "properties": {
+            "context_id": {
+              "type": "string",
+              "description": "Server-generated private checkpoint identifier.",
+              "minLength": 1,
+              "maxLength": 128,
+              "pattern": "^ctx_[A-Za-z0-9_-]+$"
+            }
+          },
+          "required": [
+            "context_id"
+          ]
+        }
+      }
+    ]
+  },
+  "outputSchema": {
+    "$schema": "https://json-schema.org/draft/2020-12/schema",
+    "type": "object",
+    "properties": {
+      "status": {
+        "type": "string",
+        "enum": [
+          "completed",
+          "failed"
+        ],
+        "description": "completed on success, failed on error."
+      },
+      "client_id": {
+        "type": [
+          "string",
+          "null"
+        ],
+        "description": "Echo of the target host id (null when no host was targeted)."
+      },
+      "job_id": {
+        "type": "string",
+        "description": "Server job handle for this execution."
+      },
+      "resource_uri": {
+        "type": "string",
+        "description": "Offload pointer for a large result text (nc://jobs/<jobId>/output). Present only when the envelope text was offloaded; fetch the full text with nc_result_fetch."
+      },
+      "resource_link": {
+        "type": "string",
+        "description": "Programmatic offload reference (mcp:result_fetch:<jobId>). Present only when the envelope text was offloaded."
+      },
+      "resource_bytes": {
+        "type": "integer",
+        "minimum": 0,
+        "description": "Byte size of the offloaded result text. Present only when the envelope text was offloaded."
+      },
+      "tool": {
+        "type": "string",
+        "description": "Requested public tool name.",
+        "minLength": 1,
+        "maxLength": 128,
+        "const": "work_context"
+      },
+      "duration_ms": {
+        "type": [
+          "integer",
+          "null"
+        ],
+        "description": "Execution time in milliseconds."
+      },
+      "result": {
+        "type": "object",
+        "description": "Bounded action-specific domain value; empty on failure.",
+        "oneOf": [
+          {
+            "type": "object",
+            "description": "Saved checkpoint.",
+            "additionalProperties": false,
+            "properties": {
+              "action": {
+                "type": "string",
+                "description": "Completed operation.",
+                "minLength": 1,
+                "maxLength": 6,
+                "const": "save"
+              },
+              "context": {
+                "type": "object",
+                "description": "Private scrubbed checkpoint.",
+                "$ref": "#/$defs/checkpoint"
+              }
+            },
+            "required": [
+              "action",
+              "context"
+            ]
+          },
+          {
+            "type": "object",
+            "description": "Read-only continuation with current availability; no dispatch.",
+            "additionalProperties": false,
+            "properties": {
+              "action": {
+                "type": "string",
+                "description": "Completed operation.",
+                "minLength": 1,
+                "maxLength": 6,
+                "const": "resume"
+              },
+              "context": {
+                "type": "object",
+                "description": "Private scrubbed checkpoint.",
+                "$ref": "#/$defs/checkpoint"
+              },
+              "availability": {
+                "type": "object",
+                "description": "Current host and reference availability, without raw outputs.",
+                "additionalProperties": false,
+                "properties": {
+                  "host": {
+                    "type": "string",
+                    "description": "Current reference visibility/liveness; unavailable conveys no authority.",
+                    "minLength": 1,
+                    "maxLength": 11,
+                    "enum": [
+                      "available",
+                      "unavailable"
+                    ]
+                  },
+                  "jobs": {
+                    "type": "array",
+                    "description": "Current job availability.",
+                    "items": {
+                      "type": "object",
+                      "description": "Job reference status.",
+                      "additionalProperties": false,
+                      "properties": {
+                        "job_id": {
+                          "type": "string",
+                          "description": "Existing job identifier.",
+                          "minLength": 1,
+                          "maxLength": 128
+                        },
+                        "availability": {
+                          "type": "string",
+                          "description": "Current reference visibility/liveness; unavailable conveys no authority.",
+                          "minLength": 1,
+                          "maxLength": 11,
+                          "enum": [
+                            "available",
+                            "unavailable"
+                          ]
+                        }
+                      },
+                      "required": [
+                        "job_id",
+                        "availability"
+                      ]
+                    },
+                    "minItems": 0,
+                    "maxItems": 10
+                  },
+                  "handles": {
+                    "type": "array",
+                    "description": "Current handle availability.",
+                    "items": {
+                      "type": "object",
+                      "description": "Handle reference status.",
+                      "additionalProperties": false,
+                      "properties": {
+                        "kind": {
+                          "type": "string",
+                          "description": "Handle family.",
+                          "minLength": 1,
+                          "maxLength": 7,
+                          "enum": [
+                            "process",
+                            "browser",
+                            "log"
+                          ]
+                        },
+                        "handle": {
+                          "type": "string",
+                          "description": "Existing opaque handle.",
+                          "minLength": 1,
+                          "maxLength": 256
+                        },
+                        "availability": {
+                          "type": "string",
+                          "description": "Current reference visibility/liveness; unavailable conveys no authority.",
+                          "minLength": 1,
+                          "maxLength": 11,
+                          "enum": [
+                            "available",
+                            "unavailable"
+                          ]
+                        }
+                      },
+                      "required": [
+                        "kind",
+                        "handle",
+                        "availability"
+                      ]
+                    },
+                    "minItems": 0,
+                    "maxItems": 10
+                  }
+                },
+                "required": [
+                  "host",
+                  "jobs",
+                  "handles"
+                ]
+              }
+            },
+            "required": [
+              "action",
+              "context",
+              "availability"
+            ]
+          },
+          {
+            "type": "object",
+            "description": "Bounded private summaries; listing does not renew expiry.",
+            "additionalProperties": false,
+            "properties": {
+              "action": {
+                "type": "string",
+                "description": "Completed operation.",
+                "minLength": 1,
+                "maxLength": 6,
+                "const": "list"
+              },
+              "contexts": {
+                "type": "array",
+                "description": "Caller-owned checkpoints for the selected host.",
+                "items": {
+                  "type": "object",
+                  "description": "Checkpoint summary.",
+                  "additionalProperties": false,
+                  "properties": {
+                    "context_id": {
+                      "type": "string",
+                      "description": "Server-generated private checkpoint identifier.",
+                      "minLength": 1,
+                      "maxLength": 128,
+                      "pattern": "^ctx_[A-Za-z0-9_-]+$"
+                    },
+                    "client_id": {
+                      "type": "string",
+                      "pattern": "^nc_[0-9a-f]{64}$",
+                      "minLength": 67,
+                      "maxLength": 67,
+                      "description": "Target NC client. Absolute routing handle, independent of any connection."
+                    },
+                    "objective": {
+                      "type": "string",
+                      "description": "Concise objective without secrets or raw output.",
+                      "minLength": 1,
+                      "maxLength": 512
+                    },
+                    "revision": {
+                      "type": "integer",
+                      "description": "Monotonic checkpoint revision.",
+                      "minimum": 1,
+                      "maximum": 9007199254740991
+                    },
+                    "created_at": {
+                      "type": "integer",
+                      "description": "Unix timestamp in milliseconds.",
+                      "minimum": 0,
+                      "maximum": 9007199254740991
+                    },
+                    "updated_at": {
+                      "type": "integer",
+                      "description": "Unix timestamp in milliseconds.",
+                      "minimum": 0,
+                      "maximum": 9007199254740991
+                    },
+                    "expires_at": {
+                      "type": "integer",
+                      "description": "Unix timestamp in milliseconds.",
+                      "minimum": 0,
+                      "maximum": 9007199254740991
+                    }
+                  },
+                  "required": [
+                    "context_id",
+                    "client_id",
+                    "objective",
+                    "revision",
+                    "created_at",
+                    "updated_at",
+                    "expires_at"
+                  ]
+                },
+                "minItems": 0,
+                "maxItems": 20
+              }
+            },
+            "required": [
+              "action",
+              "contexts"
+            ]
+          },
+          {
+            "type": "object",
+            "description": "Physical checkpoint deletion only; referenced execution is unchanged.",
+            "additionalProperties": false,
+            "properties": {
+              "action": {
+                "type": "string",
+                "description": "Completed operation.",
+                "minLength": 1,
+                "maxLength": 6,
+                "const": "delete"
+              },
+              "context_id": {
+                "type": "string",
+                "description": "Server-generated private checkpoint identifier.",
+                "minLength": 1,
+                "maxLength": 128,
+                "pattern": "^ctx_[A-Za-z0-9_-]+$"
+              },
+              "deleted": {
+                "type": "boolean",
+                "description": "Checkpoint was physically removed.",
+                "const": true
+              }
+            },
+            "required": [
+              "action",
+              "context_id",
+              "deleted"
+            ]
+          },
+          {
+            "type": "object",
+            "description": "No domain value on failure.",
+            "additionalProperties": false,
+            "properties": {},
+            "required": []
+          }
+        ]
+      },
+      "retryable": {
+        "type": "boolean",
+        "description": "Whether a failed call may succeed on retry."
+      },
+      "execution_state": {
+        "type": [
+          "string",
+          "null"
+        ],
+        "description": "Live lifecycle state when the call outlived the sync window (running, queued, ...); null otherwise."
+      },
+      "error": {
+        "type": "object",
+        "additionalProperties": false,
+        "description": "Structured failure detail. Present when status is failed.",
+        "properties": {
+          "code": {
+            "type": "string",
+            "description": "Stable machine-readable error code.",
+            "pattern": "^[A-Z][A-Z0-9_]{1,127}$"
+          },
+          "category": {
+            "type": "string",
+            "enum": [
+              "invalid_argument",
+              "authentication",
+              "authorization",
+              "policy",
+              "not_found",
+              "conflict",
+              "unsupported",
+              "timeout",
+              "transient",
+              "execution",
+              "cancelled",
+              "internal"
+            ],
+            "description": "Public failure category. Follow retryable and suggested_action; never bypass authorization or policy. Poll existing jobs with nc_job_get; inspect output before retrying."
+          },
+          "message": {
+            "type": "string",
+            "description": "Human-readable failure summary.",
+            "minLength": 1,
+            "maxLength": 2048
+          },
+          "retryable": {
+            "type": "boolean",
+            "description": "Whether retrying may succeed (mirrors top-level retryable)."
+          },
+          "suggested_action": {
+            "type": "object",
+            "additionalProperties": false,
+            "description": "Machine-readable recovery hint.",
+            "properties": {
+              "type": {
+                "type": "string",
+                "enum": [
+                  "retry",
+                  "wait",
+                  "change_input",
+                  "reauthorize",
+                  "call_tool",
+                  "contact_operator",
+                  "none"
+                ],
+                "description": "Recovery action type."
+              }
+            },
+            "required": [
+              "type"
+            ]
+          },
+          "details": {
+            "type": "object",
+            "description": "Curated safe context (never secrets, stacks, or internal paths)."
+          }
+        },
+        "required": [
+          "code",
+          "category",
+          "message",
+          "retryable",
+          "suggested_action"
+        ],
+        "allOf": [
+          {
+            "if": {
+              "properties": {
+                "retryable": {
+                  "const": true
+                }
+              },
+              "required": [
+                "retryable"
+              ]
+            },
+            "then": {
+              "properties": {
+                "suggested_action": {
+                  "properties": {
+                    "type": {
+                      "enum": [
+                        "retry",
+                        "wait"
+                      ]
+                    }
+                  }
+                }
+              }
+            }
+          },
+          {
+            "if": {
+              "properties": {
+                "retryable": {
+                  "const": false
+                }
+              },
+              "required": [
+                "retryable"
+              ]
+            },
+            "then": {
+              "properties": {
+                "suggested_action": {
+                  "properties": {
+                    "type": {
+                      "enum": [
+                        "change_input",
+                        "reauthorize",
+                        "call_tool",
+                        "contact_operator",
+                        "none"
+                      ]
+                    }
+                  }
+                }
+              }
+            }
+          }
+        ]
+      },
+      "warnings": {
+        "type": "array",
+        "description": "Non-fatal advisory notes. Always present; empty when none.",
+        "items": {
+          "type": "string"
+        }
+      }
+    },
+    "required": [
+      "status",
+      "tool",
+      "client_id",
+      "retryable",
+      "result",
+      "duration_ms",
+      "execution_state",
+      "warnings"
+    ],
+    "additionalProperties": false,
+    "$defs": {
+      "checkpoint": {
+        "type": "object",
+        "description": "Scrubbed checkpoint; tenant and subject stay private server-owned bindings.",
+        "additionalProperties": false,
+        "properties": {
+          "context_id": {
+            "type": "string",
+            "description": "Server-generated private checkpoint identifier.",
+            "minLength": 1,
+            "maxLength": 128,
+            "pattern": "^ctx_[A-Za-z0-9_-]+$"
+          },
+          "client_id": {
+            "type": "string",
+            "pattern": "^nc_[0-9a-f]{64}$",
+            "minLength": 67,
+            "maxLength": 67,
+            "description": "Target NC client. Absolute routing handle, independent of any connection."
+          },
+          "objective": {
+            "type": "string",
+            "description": "Concise objective without secrets or raw output.",
+            "minLength": 1,
+            "maxLength": 512
+          },
+          "revision": {
+            "type": "integer",
+            "description": "Monotonic checkpoint revision.",
+            "minimum": 1,
+            "maximum": 9007199254740991
+          },
+          "created_at": {
+            "type": "integer",
+            "description": "Unix timestamp in milliseconds.",
+            "minimum": 0,
+            "maximum": 9007199254740991
+          },
+          "updated_at": {
+            "type": "integer",
+            "description": "Unix timestamp in milliseconds.",
+            "minimum": 0,
+            "maximum": 9007199254740991
+          },
+          "expires_at": {
+            "type": "integer",
+            "description": "Unix timestamp in milliseconds.",
+            "minimum": 0,
+            "maximum": 9007199254740991
+          },
+          "project_dir": {
+            "type": "string",
+            "description": "Optional project location; a hint, not path authority.",
+            "minLength": 1,
+            "maxLength": 4096
+          },
+          "completed_steps": {
+            "type": "array",
+            "description": "Concise completed milestones, not transcripts.",
+            "items": {
+              "type": "string",
+              "description": "Completed milestone.",
+              "minLength": 1,
+              "maxLength": 256
+            },
+            "minItems": 0,
+            "maxItems": 20
+          },
+          "next_step": {
+            "type": "string",
+            "description": "Next intended step; resume never executes it.",
+            "minLength": 1,
+            "maxLength": 512
+          },
+          "job_refs": {
+            "type": "array",
+            "description": "Existing visible job identifiers on this client; never job outputs.",
+            "items": {
+              "type": "string",
+              "description": "Existing job identifier.",
+              "minLength": 1,
+              "maxLength": 128
+            },
+            "minItems": 0,
+            "maxItems": 10
+          },
+          "handle_refs": {
+            "type": "array",
+            "description": "Existing visible typed handles on this client; no execution state or credentials.",
+            "items": {
+              "type": "object",
+              "description": "Execution reference, not authority.",
+              "additionalProperties": false,
+              "properties": {
+                "kind": {
+                  "type": "string",
+                  "description": "Handle family.",
+                  "minLength": 1,
+                  "maxLength": 7,
+                  "enum": [
+                    "process",
+                    "browser",
+                    "log"
+                  ]
+                },
+                "handle": {
+                  "type": "string",
+                  "description": "Existing opaque handle.",
+                  "minLength": 1,
+                  "maxLength": 256
+                }
+              },
+              "required": [
+                "kind",
+                "handle"
+              ]
+            },
+            "minItems": 0,
+            "maxItems": 10
+          }
+        },
+        "required": [
+          "context_id",
+          "client_id",
+          "objective",
+          "revision",
+          "created_at",
+          "updated_at",
+          "expires_at",
+          "completed_steps",
+          "next_step",
+          "job_refs",
+          "handle_refs"
+        ]
+      }
+    },
+    "allOf": [
+      {
+        "if": {
+          "properties": {
+            "status": {
+              "const": "failed"
+            }
+          },
+          "required": [
+            "status"
+          ]
+        },
+        "then": {
+          "required": [
+            "error"
+          ],
+          "properties": {
+            "result": {
+              "maxProperties": 0
+            }
+          }
+        },
+        "else": {
+          "properties": {
+            "result": {
+              "minProperties": 1
+            }
+          }
+        }
+      },
+      {
+        "if": {
+          "properties": {
+            "status": {
+              "const": "failed"
+            }
+          },
+          "required": [
+            "status"
+          ]
+        },
+        "then": {
+          "required": [
+            "error"
+          ]
+        }
+      }
+    ]
+  },
+  "annotations": {
+    "title": "Work Context",
+    "readOnlyHint": false,
+    "destructiveHint": true,
+    "idempotentHint": false,
+    "openWorldHint": false
+  },
+  "_meta": {
+    "nodecommand.app/execution": {
+      "taskSupport": "forbidden"
+    }
+  }
+}

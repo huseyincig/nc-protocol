@@ -18,7 +18,7 @@ changes here are explicit and auditable.
 
 ```text
 agent/     Hub ↔ Agent wire protocol (hello / welcome / request / reply / heartbeat)
-mcp/       Model-facing MCP surface (tool schemas + canonical tool manifest)
+mcp/       Canonical authoring definitions and contract manifest
 policy/    Public host-policy projection + capability names
 browser/   Public browser and egress policy schemas
 bindings/  Generated language bindings (JavaScript ESM)
@@ -57,6 +57,13 @@ The current contract version, fingerprint, and capability list are pinned in
 `mcp/contract-version`, `mcp/fingerprint`, and `policy/capability-names`;
 the current generation and rollout rules are in
 [COMPATIBILITY.md](COMPATIBILITY.md).
+
+The manifest counts canonical authoring definitions, not the number of tools
+available to a particular connected user. The hosted platform composes these
+definitions into its public `nc_` surface and filters discovery by role and scope.
+Use that server's authenticated `tools/list` response for callable names and
+schemas; do not invoke an authoring identifier merely because it appears here.
+Internal operation identifiers and the agent wire protocol remain distinct.
 
 ---
 

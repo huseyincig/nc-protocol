@@ -1,6 +1,6 @@
 {
-  "contract_version": "11.22.0",
-  "fingerprint": "sha256:6f3394c5fac6157037a21120fe6e20697a679902595c35baaf3c1dae062f0dfc",
+  "contract_version": "12.1.0",
+  "fingerprint": "sha256:c26b49d2a44d085111f63ab9f330af99fdb10de6dfe5d673937a1e0a42d4ca3f",
   "tools": [
     "client_list",
     "client_ping",
@@ -47,6 +47,12 @@
     "service_manage",
     "process_manage",
     "browser_manage",
-    "nc_playbook"
+    "nc_playbook",
+    "client_query",
+    "file_content",
+    "gui_manage",
+    "host_inspect",
+    "project_manage",
+    "work_context"
   ]
 }

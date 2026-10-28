@@ -1,7 +1,7 @@
 {
   "name": "system_diagnose",
   "title": "Diagnose Host Health",
-  "description": "Runs a read-only health diagnosis on a host (CPU/memory/disk pressure, top resource consumers, failed services) and returns a verdict with evidence. Prefer this over manually combining system_snapshot, process_manage and service_manage calls. Never mutates the host; a partial result names which checks failed. Slow, full, or failing: start here. REQUIRED: 1. run 2. triage failures. IF DIAGNOSE_ALL_CHECKS_FAILED: gather evidence via system_snapshot plus log_query, then page the operator. DO NOT guess; snapshot via system_snapshot.",
+  "description": "Runs a read-only health diagnosis on a host (CPU/memory/disk pressure, top resource consumers, failed services) and returns a verdict with evidence. Prefer this over manually combining system_snapshot, process_manage and service_manage calls. Never mutates the host; a partial result names which checks failed. If no matching playbook exists or a single-call verdict is needed, start here; for known multi-step workflows, use nc_playbook first. REQUIRED: 1. run 2. triage failures. IF DIAGNOSE_ALL_CHECKS_FAILED: gather evidence via system_snapshot plus log_query, then page the operator. DO NOT guess; snapshot via system_snapshot.",
   "inputSchema": {
     "$schema": "https://json-schema.org/draft/2020-12/schema",
     "type": "object",

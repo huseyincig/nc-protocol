@@ -1,16 +1,31 @@
 {
   "name": "package_manage",
   "title": "Manage Package",
-  "description": "Installs or removes one named package convergently (reinstall and remove-absent succeed). Use this to change software state; for inventory use package_list instead. System scope needs an elevated agent. Long ops may outlive the window, then poll job_get. Admin-gated. PACKAGE_PRIVILEGE_REQUIRED: needs an elevated agent; HOST_POLICY_DENIED: ask an operator. STANDARD PROCESS: FIRST package_list THEN install/remove. IF PACKAGE_PRIVILEGE_REQUIRED: reauthorize. DO NOT shell apt; converge here.",
+  "description": "Inspect installed packages with action=list on client_id; install/remove converge one exact name using manager. Inspection remains read-scoped; mutations retain administrative, policy and helper requirements. No implicit elevation or shell package-manager bypass. Verify changes with list; on PACKAGE_PRIVILEGE_REQUIRED ask an authorized operator. Poll nc_job_get for the existing operation and nc_result_fetch for offloaded output rather than rerunning it.",
+  "icons": [
+    {
+      "src": "https://nodecommand.app/icons/package_manage.svg",
+      "mimeType": "image/svg+xml",
+      "sizes": [
+        "any"
+      ],
+      "theme": "light"
+    }
+  ],
   "inputSchema": {
     "$schema": "https://json-schema.org/draft/2020-12/schema",
     "type": "object",
-    "required": [
-      "client_id",
-      "action",
-      "name"
-    ],
+    "unevaluatedProperties": false,
     "properties": {
+      "action": {
+        "type": "string",
+        "description": "Select one operation; only its parameters are accepted.",
+        "enum": [
+          "install",
+          "remove",
+          "list"
+        ]
+      },
       "client_id": {
         "type": "string",
         "pattern": "^nc_[0-9a-f]{64}$",
@@ -18,36 +33,12 @@
         "maxLength": 67,
         "description": "Target NC client. Absolute routing handle, independent of any connection.",
         "x-mcp-header": "Client-Id"
-      },
-      "action": {
-        "type": "string",
-        "enum": [
-          "install",
-          "remove"
-        ],
-        "description": "Package operation to perform."
-      },
-      "name": {
-        "type": "string",
-        "pattern": "^[A-Za-z0-9][A-Za-z0-9+_.:~-]{0,127}$",
-        "description": "Exact package name in the native manager.",
-        "maxLength": 256
-      },
-      "manager": {
-        "type": "string",
-        "enum": [
-          "auto",
-          "apt",
-          "dnf",
-          "apk",
-          "pacman",
-          "winget",
-          "brew"
-        ],
-        "description": "Package manager to use. Defaults to auto (first available on the host)."
       }
     },
-    "unevaluatedProperties": false,
+    "required": [
+      "action",
+      "client_id"
+    ],
     "allOf": [
       {
         "if": {
@@ -55,10 +46,38 @@
             "action": {
               "const": "install"
             }
-          }
+          },
+          "required": [
+            "action"
+          ]
         },
         "then": {
-          "properties": {}
+          "type": "object",
+          "required": [
+            "name"
+          ],
+          "properties": {
+            "name": {
+              "type": "string",
+              "pattern": "^[A-Za-z0-9][A-Za-z0-9+_.:~-]{0,127}$",
+              "description": "Exact package name in the native manager.",
+              "maxLength": 256
+            },
+            "manager": {
+              "type": "string",
+              "enum": [
+                "auto",
+                "apt",
+                "dnf",
+                "apk",
+                "pacman",
+                "zypper",
+                "winget",
+                "brew"
+              ],
+              "description": "Package manager to use. Defaults to auto (first available on the host). yum is not accepted - pass dnf on rpm-backed hosts. choco is not accepted - Windows uses winget."
+            }
+          }
         }
       },
       {
@@ -67,10 +86,82 @@
             "action": {
               "const": "remove"
             }
-          }
+          },
+          "required": [
+            "action"
+          ]
         },
         "then": {
-          "properties": {}
+          "type": "object",
+          "required": [
+            "name"
+          ],
+          "properties": {
+            "name": {
+              "type": "string",
+              "pattern": "^[A-Za-z0-9][A-Za-z0-9+_.:~-]{0,127}$",
+              "description": "Exact package name in the native manager.",
+              "maxLength": 256
+            },
+            "manager": {
+              "type": "string",
+              "enum": [
+                "auto",
+                "apt",
+                "dnf",
+                "apk",
+                "pacman",
+                "zypper",
+                "winget",
+                "brew"
+              ],
+              "description": "Package manager to use. Defaults to auto (first available on the host). yum is not accepted - pass dnf on rpm-backed hosts. choco is not accepted - Windows uses winget."
+            }
+          }
+        }
+      },
+      {
+        "if": {
+          "properties": {
+            "action": {
+              "const": "list"
+            }
+          },
+          "required": [
+            "action"
+          ]
+        },
+        "then": {
+          "type": "object",
+          "required": [],
+          "properties": {
+            "manager": {
+              "type": "string",
+              "enum": [
+                "auto",
+                "apt",
+                "dnf",
+                "apk",
+                "pacman",
+                "zypper",
+                "winget",
+                "brew"
+              ],
+              "description": "Package manager to query. Defaults to auto (first available on the host). yum is not accepted - pass dnf on rpm-backed hosts. choco is not accepted - Windows uses winget."
+            },
+            "contains": {
+              "type": "string",
+              "minLength": 1,
+              "maxLength": 128,
+              "description": "Optional case-insensitive substring filter on package names."
+            },
+            "limit": {
+              "type": "integer",
+              "minimum": 1,
+              "maximum": 1000,
+              "description": "Maximum packages returned. Defaults to 200."
+            }
+          }
         }
       }
     ]
@@ -81,98 +172,403 @@
     "properties": {
       "status": {
         "type": "string",
+        "description": "Execution outcome.",
         "enum": [
           "completed",
           "failed"
-        ],
-        "description": "completed on success, failed on error."
-      },
-      "client_id": {
-        "type": [
-          "string",
-          "null"
-        ],
-        "description": "Echo of the target host id (null when no host was targeted)."
-      },
-      "job_id": {
-        "type": "string",
-        "description": "Server job handle for this execution."
-      },
-      "resource_uri": {
-        "type": "string",
-        "description": "Offload pointer for a large result text (nc://jobs/<jobId>/output). Present only when the envelope text was offloaded; fetch the full text with result_fetch."
-      },
-      "resource_link": {
-        "type": "string",
-        "description": "Programmatic offload reference (mcp:result_fetch:<jobId>). Present only when the envelope text was offloaded."
-      },
-      "resource_bytes": {
-        "type": "integer",
-        "minimum": 0,
-        "description": "Byte size of the offloaded result text. Present only when the envelope text was offloaded."
+        ]
       },
       "tool": {
         "type": "string",
-        "description": "Echo of the invoked tool name."
+        "description": "Requested public tool name; jobs and audit retain source identity."
       },
-      "duration_ms": {
-        "type": [
-          "integer",
-          "null"
-        ],
-        "description": "Execution time in milliseconds."
-      },
-      "result": {
+      "error": {
         "type": "object",
-        "description": "Install outcome (installed/version) or removal outcome (removed).",
+        "additionalProperties": false,
+        "description": "Structured failure detail. Present when status is failed.",
         "properties": {
-          "platform": {
+          "code": {
             "type": "string",
-            "description": "linux, darwin or win32."
+            "description": "Stable machine-readable error code.",
+            "pattern": "^[A-Z][A-Z0-9_]{1,127}$"
           },
-          "manager": {
+          "category": {
             "type": "string",
-            "description": "Package manager that ran."
-          },
-          "name": {
-            "type": "string",
-            "description": "Requested package name."
-          },
-          "installed": {
-            "type": [
-              "boolean",
-              "null"
+            "enum": [
+              "invalid_argument",
+              "authentication",
+              "authorization",
+              "policy",
+              "not_found",
+              "conflict",
+              "unsupported",
+              "timeout",
+              "transient",
+              "execution",
+              "cancelled",
+              "internal"
             ],
-            "description": "True when the package is present after an install."
+            "description": "Public failure category. Follow retryable and suggested_action; never bypass authorization or policy. Poll existing jobs with nc_job_get; inspect output before retrying."
           },
-          "removed": {
-            "type": [
-              "boolean",
-              "null"
+          "message": {
+            "type": "string",
+            "description": "Human-readable failure summary.",
+            "minLength": 1,
+            "maxLength": 2048
+          },
+          "retryable": {
+            "type": "boolean",
+            "description": "Whether retrying may succeed (mirrors top-level retryable)."
+          },
+          "suggested_action": {
+            "type": "object",
+            "additionalProperties": false,
+            "description": "Machine-readable recovery hint.",
+            "properties": {
+              "type": {
+                "type": "string",
+                "enum": [
+                  "retry",
+                  "wait",
+                  "change_input",
+                  "reauthorize",
+                  "call_tool",
+                  "contact_operator",
+                  "none"
+                ],
+                "description": "Recovery action type."
+              }
+            },
+            "required": [
+              "type"
+            ]
+          },
+          "details": {
+            "type": "object",
+            "description": "Curated safe context (never secrets, stacks, or internal paths)."
+          }
+        },
+        "required": [
+          "code",
+          "category",
+          "message",
+          "retryable",
+          "suggested_action"
+        ],
+        "allOf": [
+          {
+            "if": {
+              "properties": {
+                "retryable": {
+                  "const": true
+                }
+              },
+              "required": [
+                "retryable"
+              ]
+            },
+            "then": {
+              "properties": {
+                "suggested_action": {
+                  "properties": {
+                    "type": {
+                      "enum": [
+                        "retry",
+                        "wait"
+                      ]
+                    }
+                  }
+                }
+              }
+            }
+          },
+          {
+            "if": {
+              "properties": {
+                "retryable": {
+                  "const": false
+                }
+              },
+              "required": [
+                "retryable"
+              ]
+            },
+            "then": {
+              "properties": {
+                "suggested_action": {
+                  "properties": {
+                    "type": {
+                      "enum": [
+                        "change_input",
+                        "reauthorize",
+                        "call_tool",
+                        "contact_operator",
+                        "none"
+                      ]
+                    }
+                  }
+                }
+              }
+            }
+          }
+        ]
+      }
+    },
+    "required": [
+      "status",
+      "tool"
+    ],
+    "unevaluatedProperties": false,
+    "anyOf": [
+      {
+        "type": "object",
+        "properties": {
+          "status": {
+            "type": "string",
+            "enum": [
+              "completed",
+              "failed"
             ],
-            "description": "True when a remove call removed the package; false when it was already absent."
+            "description": "completed on success, failed on error."
           },
-          "version": {
+          "client_id": {
             "type": [
               "string",
               "null"
             ],
-            "description": "Installed version when the manager reports one."
+            "description": "Echo of the target host id (null when no host was targeted)."
+          },
+          "job_id": {
+            "type": "string",
+            "description": "Server job handle for this execution."
+          },
+          "resource_uri": {
+            "type": "string",
+            "description": "Offload pointer for a large result text (nc://jobs/<jobId>/output). Present only when the envelope text was offloaded; fetch the full text with nc_result_fetch.",
+            "$ref": "#/$defs/shared_resource_uri_0"
+          },
+          "resource_link": {
+            "type": "string",
+            "description": "Programmatic offload reference (mcp:result_fetch:<jobId>). Present only when the envelope text was offloaded."
+          },
+          "resource_bytes": {
+            "type": "integer",
+            "minimum": 0,
+            "description": "Byte size of the offloaded result text. Present only when the envelope text was offloaded."
+          },
+          "tool": {
+            "type": "string",
+            "description": "Echo of the invoked tool name."
+          },
+          "duration_ms": {
+            "type": [
+              "integer",
+              "null"
+            ],
+            "description": "Execution time in milliseconds."
+          },
+          "result": {
+            "type": "object",
+            "description": "Install outcome (installed/version) or removal outcome (removed).",
+            "properties": {
+              "platform": {
+                "type": "string",
+                "description": "linux, darwin or win32."
+              },
+              "manager": {
+                "type": "string",
+                "description": "Package manager that ran."
+              },
+              "name": {
+                "type": "string",
+                "description": "Requested package name."
+              },
+              "installed": {
+                "type": [
+                  "boolean",
+                  "null"
+                ],
+                "description": "True when the package is present after an install."
+              },
+              "removed": {
+                "type": [
+                  "boolean",
+                  "null"
+                ],
+                "description": "True when a remove call removed the package; false when it was already absent."
+              },
+              "version": {
+                "type": [
+                  "string",
+                  "null"
+                ],
+                "description": "Installed version when the manager reports one."
+              }
+            }
+          },
+          "retryable": {
+            "type": "boolean",
+            "description": "Whether a failed call may succeed on retry."
+          },
+          "execution_state": {
+            "type": [
+              "string",
+              "null"
+            ],
+            "description": "Live lifecycle state when the call outlived the sync window (running, queued, ...); null otherwise."
+          },
+          "error": {
+            "type": "object",
+            "description": "Structured failure detail. Present when status is failed.",
+            "$ref": "#/$defs/shared_error_1"
+          },
+          "warnings": {
+            "type": "array",
+            "description": "Non-fatal advisory notes. Always present; empty when none.",
+            "items": {
+              "type": "string"
+            }
           }
-        }
-      },
-      "retryable": {
-        "type": "boolean",
-        "description": "Whether a failed call may succeed on retry."
-      },
-      "execution_state": {
-        "type": [
-          "string",
-          "null"
+        },
+        "required": [
+          "status",
+          "tool",
+          "client_id",
+          "retryable",
+          "duration_ms",
+          "result",
+          "execution_state",
+          "warnings"
         ],
-        "description": "Live lifecycle state when the call outlived the sync window (running, queued, ...); null otherwise."
+        "additionalProperties": false,
+        "title": "package_manage"
       },
-      "error": {
+      {
+        "type": "object",
+        "properties": {
+          "status": {
+            "type": "string",
+            "enum": [
+              "completed",
+              "failed"
+            ],
+            "description": "completed on success, failed on error."
+          },
+          "client_id": {
+            "type": [
+              "string",
+              "null"
+            ],
+            "description": "Echo of the target host id (null when no host was targeted)."
+          },
+          "job_id": {
+            "type": "string",
+            "description": "Server job handle for this execution."
+          },
+          "resource_uri": {
+            "type": "string",
+            "description": "Offload pointer for a large result text (nc://jobs/<jobId>/output). Present only when the envelope text was offloaded; fetch the full text with nc_result_fetch.",
+            "$ref": "#/$defs/shared_resource_uri_0"
+          },
+          "resource_link": {
+            "type": "string",
+            "description": "Programmatic offload reference (mcp:result_fetch:<jobId>). Present only when the envelope text was offloaded."
+          },
+          "resource_bytes": {
+            "type": "integer",
+            "minimum": 0,
+            "description": "Byte size of the offloaded result text. Present only when the envelope text was offloaded."
+          },
+          "tool": {
+            "type": "string",
+            "description": "Echo of the invoked tool name."
+          },
+          "duration_ms": {
+            "type": [
+              "integer",
+              "null"
+            ],
+            "description": "Execution time in milliseconds."
+          },
+          "result": {
+            "type": "object",
+            "description": "Installed-package inventory from the selected manager.",
+            "properties": {
+              "platform": {
+                "type": "string",
+                "description": "linux, darwin or win32."
+              },
+              "manager": {
+                "type": "string",
+                "description": "Package manager that answered."
+              },
+              "truncated": {
+                "type": "boolean",
+                "description": "True when the limit cut the inventory; narrow with contains."
+              },
+              "packages": {
+                "type": "array",
+                "items": {
+                  "type": "object",
+                  "properties": {
+                    "name": {
+                      "type": "string"
+                    },
+                    "version": {
+                      "type": [
+                        "string",
+                        "null"
+                      ]
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "retryable": {
+            "type": "boolean",
+            "description": "Whether a failed call may succeed on retry."
+          },
+          "execution_state": {
+            "type": [
+              "string",
+              "null"
+            ],
+            "description": "Live lifecycle state when the call outlived the sync window (running, queued, ...); null otherwise."
+          },
+          "error": {
+            "type": "object",
+            "description": "Structured failure detail. Present when status is failed.",
+            "$ref": "#/$defs/shared_error_1"
+          },
+          "warnings": {
+            "type": "array",
+            "description": "Non-fatal advisory notes. Always present; empty when none.",
+            "items": {
+              "type": "string"
+            }
+          }
+        },
+        "required": [
+          "status",
+          "tool",
+          "client_id",
+          "retryable",
+          "result",
+          "duration_ms",
+          "execution_state",
+          "warnings"
+        ],
+        "additionalProperties": false,
+        "title": "package_list"
+      }
+    ],
+    "$defs": {
+      "shared_resource_uri_0": {
+        "type": "string",
+        "description": "Offload pointer for a large result text (nc://jobs/<jobId>/output). Present only when the envelope text was offloaded; fetch the full text with nc_result_fetch."
+      },
+      "shared_error_1": {
         "type": "object",
         "additionalProperties": false,
         "description": "Structured failure detail. Present when status is failed.",
@@ -197,7 +593,7 @@
               "cancelled",
               "internal"
             ],
-            "description": "Public error category for model branching. invalid_argument: Fix the input; do not retry the same call unchanged. authentication: Re-authenticate before retrying. authorization: Insufficient permission; do not retry or attempt to bypass. policy: Rejected by host policy; do not attempt to bypass. Adjust the request or ask an operator. not_found: Resource missing; re-discover the id/path/service/container before retrying. conflict: Conflicting state; re-read the current state, then decide. unsupported: Not supported here; do not retry. Look for an alternative tool or capability. timeout: Timed out; if retryable, wait, then poll with job_get. transient: Transient; retry with backoff if retryable. execution: Execution failure; inspect stdout/stderr/state before retrying. cancelled: Cancelled; do not blindly retry. internal: Internal error; if it reproduces, report it with nc_feedback."
+            "description": "Public failure category. Follow retryable and suggested_action; never bypass authorization or policy. Poll existing jobs with nc_job_get; inspect output before retrying."
           },
           "message": {
             "type": "string",
@@ -242,26 +638,27 @@
           "retryable",
           "suggested_action"
         ]
-      },
-      "warnings": {
-        "type": "array",
-        "description": "Non-fatal advisory notes. Always present; empty when none.",
-        "items": {
-          "type": "string"
-        }
       }
     },
-    "required": [
-      "status",
-      "tool",
-      "client_id",
-      "retryable",
-      "duration_ms",
-      "result",
-      "execution_state",
-      "warnings"
-    ],
-    "additionalProperties": false
+    "allOf": [
+      {
+        "if": {
+          "properties": {
+            "status": {
+              "const": "failed"
+            }
+          },
+          "required": [
+            "status"
+          ]
+        },
+        "then": {
+          "required": [
+            "error"
+          ]
+        }
+      }
+    ]
   },
   "annotations": {
     "title": "Manage Package",
@@ -270,16 +667,6 @@
     "idempotentHint": true,
     "openWorldHint": true
   },
-  "icons": [
-    {
-      "src": "https://nodecommand.app/icons/package_manage.svg",
-      "mimeType": "image/svg+xml",
-      "sizes": [
-        "any"
-      ],
-      "theme": "light"
-    }
-  ],
   "_meta": {
     "nodecommand.app/execution": {
       "taskSupport": "optional"

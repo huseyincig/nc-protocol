@@ -1,7 +1,7 @@
 {
   "name": "file_browse",
   "title": "Browse Files",
-  "description": "Reads file metadata on a client: stat one path, list a directory, tree it recursively, search file contents by pattern, or resolve a command name via PATH lookup (which). Use this for discovery; for content use file_read instead. All shapes bounded. Async: poll job_get with the returned job_id. PATH_NOT_ALLOWED: stay inside allowed roots; never guess paths. REQUIRED: 1. stat, then list/tree/search. IF PATH_NOT_ALLOWED: shorten to allowed root. DO NOT shell cat; use file_read.",
+  "description": "Reads file metadata on a client: stat one path, list a directory, tree it recursively, search file contents by pattern, or resolve a command name via PATH lookup (which). Use this for discovery; for content use nc_file_content action=read instead. All shapes bounded. Async: poll nc_job_get with the returned job_id. PATH_NOT_ALLOWED: stay inside allowed roots; never guess paths. REQUIRED: 1. stat, then list/tree/search. IF PATH_NOT_ALLOWED: shorten to allowed root. DO NOT shell cat; use nc_file_content action=read.",
   "inputSchema": {
     "$schema": "https://json-schema.org/draft/2020-12/schema",
     "type": "object",
@@ -166,7 +166,7 @@
       },
       "resource_uri": {
         "type": "string",
-        "description": "Offload pointer for a large result text (nc://jobs/<jobId>/output). Present only when the envelope text was offloaded; fetch the full text with result_fetch."
+        "description": "Offload pointer for a large result text (nc://jobs/<jobId>/output). Present only when the envelope text was offloaded; fetch the full text with nc_result_fetch."
       },
       "resource_link": {
         "type": "string",
@@ -272,7 +272,7 @@
               "cancelled",
               "internal"
             ],
-            "description": "Public error category for model branching. invalid_argument: Fix the input; do not retry the same call unchanged. authentication: Re-authenticate before retrying. authorization: Insufficient permission; do not retry or attempt to bypass. policy: Rejected by host policy; do not attempt to bypass. Adjust the request or ask an operator. not_found: Resource missing; re-discover the id/path/service/container before retrying. conflict: Conflicting state; re-read the current state, then decide. unsupported: Not supported here; do not retry. Look for an alternative tool or capability. timeout: Timed out; if retryable, wait, then poll with job_get. transient: Transient; retry with backoff if retryable. execution: Execution failure; inspect stdout/stderr/state before retrying. cancelled: Cancelled; do not blindly retry. internal: Internal error; if it reproduces, report it with nc_feedback."
+            "description": "Public error category for model branching. invalid_argument: Fix the input; do not retry the same call unchanged. authentication: Re-authenticate before retrying. authorization: Insufficient permission; do not retry or attempt to bypass. policy: Rejected by host policy; do not attempt to bypass. Adjust the request or ask an operator. not_found: Resource missing; re-discover the id/path/service/container before retrying. conflict: Conflicting state; re-read the current state, then decide. unsupported: Not supported here; do not retry. Look for an alternative tool or capability. timeout: Timed out; if retryable, wait, then poll with nc_job_get. transient: Transient; retry with backoff if retryable. execution: Execution failure; inspect stdout/stderr/state before retrying. cancelled: Cancelled; do not blindly retry. internal: Internal error; if it reproduces, report it with nc_feedback."
           },
           "message": {
             "type": "string",

@@ -1,7 +1,7 @@
 {
   "name": "log_stream",
   "title": "Stream Logs",
-  "description": "Multi-action log streaming tool. Use action=start to open a stateful tail handle (client_id and source required), action=stop to release it, or action=read to poll new entries; pass client_id with read/stop as well as the handle. For one-shot reads use log_query instead. Replaces the retired granular log tail tools. Async: poll job_get with the returned job_id. Large output: read with result_fetch. INVALID_HANDLE: start a fresh handle; LOG_RESULT_EXPIRED: re-read. REQUIRED: 1. start handle 2. read, then stop. IF LOG_RESULT_EXPIRED: restart handle. DO NOT backfill here; log_query reads past.",
+  "description": "Stream logs through a stateful host-bound handle. action=start requires client_id and source; an allowed path overrides the selected file but does not remove the source requirement. max_lines defaults to 200. action=read and action=stop require handle and accept an optional client_id routing hint; the handle alone is sufficient. Read accepts cursor/limit, but the current agent uses a 65536-byte window per poll rather than enforcing limit. For one-shot or past-log reads use nc_log_query. Async: poll nc_job_get with the returned job_id; fetch offloaded output with nc_result_fetch. Start once, read, then stop; an invalid or expired handle requires a fresh start.",
   "icons": [
     {
       "src": "https://nodecommand.app/icons/log_stream.svg",
@@ -26,15 +26,6 @@
           "read"
         ]
       },
-      "source": {
-        "type": "string",
-        "enum": [
-          "client",
-          "mcp-server",
-          "mcp-tunnel"
-        ],
-        "description": "Named log source. Ignored when path is given."
-      },
       "path": {
         "type": "string",
         "description": "Explicit log file path (optional).",
@@ -55,10 +46,9 @@
       },
       "limit": {
         "type": "integer",
-        "description": "Maximum entries to return per action=read poll.",
+        "description": "Optional entry-count hint for action=read; the current agent does not enforce it and reads at most 65536 bytes per poll.",
         "minimum": 1,
-        "maximum": 1000,
-        "default": 100
+        "maximum": 1000
       },
       "cursor": {
         "type": "integer",
@@ -122,6 +112,15 @@
               "maxLength": 67,
               "description": "Optional routing hint. The handle alone is sufficient to release the stream."
             },
+            "source": {
+              "type": "string",
+              "enum": [
+                "client",
+                "mcp-server",
+                "mcp-tunnel"
+              ],
+              "description": "Named log source. Ignored when path is given."
+            },
             "handle": {
               "type": "string",
               "pattern": "^log_[0-9a-f]{32}$",
@@ -149,6 +148,15 @@
               "minLength": 67,
               "maxLength": 67,
               "description": "Optional routing hint. The handle alone is sufficient to poll the stream."
+            },
+            "source": {
+              "type": "string",
+              "enum": [
+                "client",
+                "mcp-server",
+                "mcp-tunnel"
+              ],
+              "description": "Named log source. Ignored when path is given."
             },
             "handle": {
               "type": "string",
@@ -236,7 +244,7 @@
       },
       "resource_uri": {
         "type": "string",
-        "description": "Offload pointer for a large result text (nc://jobs/<jobId>/output). Present only when the envelope text was offloaded; fetch the full text with result_fetch."
+        "description": "Offload pointer for a large result text (nc://jobs/<jobId>/output). Present only when the envelope text was offloaded; fetch the full text with nc_result_fetch."
       },
       "resource_link": {
         "type": "string",
@@ -279,7 +287,7 @@
               "cancelled",
               "internal"
             ],
-            "description": "Public error category for model branching. invalid_argument: Fix the input; do not retry the same call unchanged. authentication: Re-authenticate before retrying. authorization: Insufficient permission; do not retry or attempt to bypass. policy: Rejected by host policy; do not attempt to bypass. Adjust the request or ask an operator. not_found: Resource missing; re-discover the id/path/service/container before retrying. conflict: Conflicting state; re-read the current state, then decide. unsupported: Not supported here; do not retry. Look for an alternative tool or capability. timeout: Timed out; if retryable, wait, then poll with job_get. transient: Transient; retry with backoff if retryable. execution: Execution failure; inspect stdout/stderr/state before retrying. cancelled: Cancelled; do not blindly retry. internal: Internal error; if it reproduces, report it with nc_feedback."
+            "description": "Public error category for model branching. invalid_argument: Fix the input; do not retry the same call unchanged. authentication: Re-authenticate before retrying. authorization: Insufficient permission; do not retry or attempt to bypass. policy: Rejected by host policy; do not attempt to bypass. Adjust the request or ask an operator. not_found: Resource missing; re-discover the id/path/service/container before retrying. conflict: Conflicting state; re-read the current state, then decide. unsupported: Not supported here; do not retry. Look for an alternative tool or capability. timeout: Timed out; if retryable, wait, then poll with nc_job_get. transient: Transient; retry with backoff if retryable. execution: Execution failure; inspect stdout/stderr/state before retrying. cancelled: Cancelled; do not blindly retry. internal: Internal error; if it reproduces, report it with nc_feedback."
           },
           "message": {
             "type": "string",

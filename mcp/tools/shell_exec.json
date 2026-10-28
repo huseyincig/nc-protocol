@@ -1,7 +1,7 @@
 {
   "name": "shell_exec",
   "title": "Run Shell Command",
-  "description": "Executes a shell command on the selected client (cmd.exe on Windows, /bin/bash elsewhere); write nested PowerShell via powershell.exe, never assume PS syntax. Fallback tool: prefer dedicated NC tools whenever they fit. Returns bounded output. High-risk; confirmation recommended. For managed processes use process_manage. Async: poll job_get with the returned job_id. Large output: read with result_fetch. EXEC_NONZERO: read stderr before retrying. Never cat, grep, df, or git here. REQUIRED: 1. craft command 2. run, poll job_get. IF EXEC_NONZERO: read stderr first. DO NOT elevate here; privileged_shell_exec signs.",
+  "description": "Run a nonprivileged command on client_id (cmd.exe on Windows, /bin/bash elsewhere; invoke powershell.exe explicitly for PowerShell). High-risk broad OS-identity execution with bounded output; confirmation is recommended. Prefer typed tools when they fit: shell does not reproduce their restricted roots, capabilities, managed handles or signed-helper controls and is never a denial bypass. Use nc_process_manage for managed processes; nc_privileged_shell_exec requires separate explicit authorization. Poll nc_job_get for the existing job and nc_result_fetch for offloaded output. On EXEC_NONZERO inspect stderr before retrying.",
   "inputSchema": {
     "$schema": "https://json-schema.org/draft/2020-12/schema",
     "type": "object",
@@ -98,7 +98,7 @@
       },
       "resource_uri": {
         "type": "string",
-        "description": "Offload pointer for a large result text (nc://jobs/<jobId>/output). Present only when the envelope text was offloaded; fetch the full text with result_fetch."
+        "description": "Offload pointer for a large result text (nc://jobs/<jobId>/output). Present only when the envelope text was offloaded; fetch the full text with nc_result_fetch."
       },
       "resource_link": {
         "type": "string",
@@ -141,7 +141,7 @@
               "cancelled",
               "internal"
             ],
-            "description": "Public error category for model branching. invalid_argument: Fix the input; do not retry the same call unchanged. authentication: Re-authenticate before retrying. authorization: Insufficient permission; do not retry or attempt to bypass. policy: Rejected by host policy; do not attempt to bypass. Adjust the request or ask an operator. not_found: Resource missing; re-discover the id/path/service/container before retrying. conflict: Conflicting state; re-read the current state, then decide. unsupported: Not supported here; do not retry. Look for an alternative tool or capability. timeout: Timed out; if retryable, wait, then poll with job_get. transient: Transient; retry with backoff if retryable. execution: Execution failure; inspect stdout/stderr/state before retrying. cancelled: Cancelled; do not blindly retry. internal: Internal error; if it reproduces, report it with nc_feedback."
+            "description": "Public error category for model branching. invalid_argument: Fix the input; do not retry the same call unchanged. authentication: Re-authenticate before retrying. authorization: Insufficient permission; do not retry or attempt to bypass. policy: Rejected by host policy; do not attempt to bypass. Adjust the request or ask an operator. not_found: Resource missing; re-discover the id/path/service/container before retrying. conflict: Conflicting state; re-read the current state, then decide. unsupported: Not supported here; do not retry. Look for an alternative tool or capability. timeout: Timed out; if retryable, wait, then poll with nc_job_get. transient: Transient; retry with backoff if retryable. execution: Execution failure; inspect stdout/stderr/state before retrying. cancelled: Cancelled; do not blindly retry. internal: Internal error; if it reproduces, report it with nc_feedback."
           },
           "message": {
             "type": "string",

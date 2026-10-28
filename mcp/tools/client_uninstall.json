@@ -1,7 +1,7 @@
 {
   "name": "client_uninstall",
   "title": "Uninstall NC Client",
-  "description": "Removes the NC agent from the selected client: stops services/daemons and deletes the runtime. Destructive and irreversible; requires explicit confirm=true and admin scope. Supported where the platform helper exists (Linux today). IF HOST_OFFLINE: reconnect the host first; for inventory-only removal use client_forget instead. REQUIRED: 1. set confirm=true 2. uninstall. DO NOT use this for inventory-only removal.",
+  "description": "Removes the NC agent from the selected client: stops services/daemons and deletes the runtime. Destructive and irreversible; requires explicit confirm=true and admin scope. Supported where the platform helper exists (Linux today). IF CLIENT_OFFLINE: reconnect the host first; for inventory-only removal use client_forget instead. REQUIRED: 1. set confirm=true 2. uninstall. DO NOT use this for inventory-only removal.",
   "inputSchema": {
     "$schema": "https://json-schema.org/draft/2020-12/schema",
     "type": "object",

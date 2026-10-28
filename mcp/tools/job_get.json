@@ -1,7 +1,7 @@
 {
   "name": "job_get",
   "title": "Inspect Job",
-  "description": "Reads the lifecycle state of a server job created by an earlier tool call. Use to poll long-running operations to completion instead of guessing. Read-only; the job_id is correlation-safe to store. Jobs are tenant-scoped: ids from other tenants behave as not found. The result payload may omit large text (logs, streamed output). When the job is completed but the text is truncated or absent, read it with result_fetch using the job_id. JOB_NOT_FOUND: wrong tenant or id; never re-fire it running. REQUIRED: 1. pass job_id 2. poll to terminal. IF JOB_NOT_FOUND: recheck spelling. DO NOT spin forever; result_fetch drains text.",
+  "description": "Reads the lifecycle state of a server job created by an earlier tool call. Use to poll long-running operations to completion instead of guessing. Read-only; the job_id is correlation-safe to store. Jobs are tenant-scoped: ids from other tenants behave as not found. The result payload may omit large text (logs, streamed output). When the job is completed but the text is truncated or absent, read it with nc_result_fetch using the job_id. JOB_NOT_FOUND: wrong tenant or id; never re-fire it running. REQUIRED: 1. pass job_id 2. poll to terminal. IF JOB_NOT_FOUND: recheck spelling. DO NOT spin forever; nc_result_fetch drains text.",
   "inputSchema": {
     "$schema": "https://json-schema.org/draft/2020-12/schema",
     "type": "object",
@@ -39,7 +39,7 @@
       },
       "resource_uri": {
         "type": "string",
-        "description": "Offload pointer for a large result text (nc://jobs/<jobId>/output). Present only when the envelope text was offloaded; fetch the full text with result_fetch."
+        "description": "Offload pointer for a large result text (nc://jobs/<jobId>/output). Present only when the envelope text was offloaded; fetch the full text with nc_result_fetch."
       },
       "resource_link": {
         "type": "string",
@@ -130,7 +130,7 @@
               "cancelled",
               "internal"
             ],
-            "description": "Public error category for model branching. invalid_argument: Fix the input; do not retry the same call unchanged. authentication: Re-authenticate before retrying. authorization: Insufficient permission; do not retry or attempt to bypass. policy: Rejected by host policy; do not attempt to bypass. Adjust the request or ask an operator. not_found: Resource missing; re-discover the id/path/service/container before retrying. conflict: Conflicting state; re-read the current state, then decide. unsupported: Not supported here; do not retry. Look for an alternative tool or capability. timeout: Timed out; if retryable, wait, then poll with job_get. transient: Transient; retry with backoff if retryable. execution: Execution failure; inspect stdout/stderr/state before retrying. cancelled: Cancelled; do not blindly retry. internal: Internal error; if it reproduces, report it with nc_feedback."
+            "description": "Public error category for model branching. invalid_argument: Fix the input; do not retry the same call unchanged. authentication: Re-authenticate before retrying. authorization: Insufficient permission; do not retry or attempt to bypass. policy: Rejected by host policy; do not attempt to bypass. Adjust the request or ask an operator. not_found: Resource missing; re-discover the id/path/service/container before retrying. conflict: Conflicting state; re-read the current state, then decide. unsupported: Not supported here; do not retry. Look for an alternative tool or capability. timeout: Timed out; if retryable, wait, then poll with nc_job_get. transient: Transient; retry with backoff if retryable. execution: Execution failure; inspect stdout/stderr/state before retrying. cancelled: Cancelled; do not blindly retry. internal: Internal error; if it reproduces, report it with nc_feedback."
           },
           "message": {
             "type": "string",
