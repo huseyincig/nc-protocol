@@ -1,7 +1,7 @@
 {
   "name": "file_browse",
   "title": "Browse Files",
-  "description": "Reads file metadata on a client: stat one path, list a directory, tree it recursively, search file contents by pattern, or resolve a command name via PATH lookup (which). Use this for discovery; for content use nc_file_content action=read instead. All shapes bounded. Async: poll nc_job_get with the returned job_id. PATH_NOT_ALLOWED: stay inside allowed roots; never guess paths. REQUIRED: 1. stat, then list/tree/search. IF PATH_NOT_ALLOWED: shorten to allowed root. DO NOT shell cat; use nc_file_content action=read.",
+  "description": "Reads file metadata on a client: stat one path, list a directory, tree it recursively, search file contents by pattern, or resolve a command name via PATH lookup (which). Use this for discovery; for content use nc_file_content action=read instead. All shapes bounded. Async: poll nc_job_get with the returned job_id. PATH_NOT_ALLOWED: stay inside allowed roots; never guess paths. For a known allowed path, list/tree/search directly; use stat when metadata or path type is uncertain. IF PATH_NOT_ALLOWED: shorten to allowed root. DO NOT shell cat; use nc_file_content action=read.",
   "inputSchema": {
     "$schema": "https://json-schema.org/draft/2020-12/schema",
     "type": "object",

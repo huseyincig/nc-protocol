@@ -1,6 +1,6 @@
 {
   "name": "nc-protocol",
-  "version": "12.1.0",
+  "version": "12.2.0",
   "description": "Public wire contracts, MCP tool schemas, and protocol definitions for Node Command",
   "type": "module",
   "license": "Apache-2.0",
