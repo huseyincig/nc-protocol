@@ -52,6 +52,13 @@
         "maximum": 65536,
         "default": 65536,
         "description": "Maximum bytes to return; larger output is truncated."
+      },
+      "offset": {
+        "type": "integer",
+        "description": "Starting UTF-8 byte offset; do not split a character.",
+        "minimum": 0,
+        "maximum": 9007199254740991,
+        "default": 0
       }
     },
     "allOf": [
@@ -83,8 +90,7 @@
           }
         }
       }
-    ],
-    "unevaluatedProperties": false
+    ]
   },
   "outputSchema": {
     "$schema": "https://json-schema.org/draft/2020-12/schema",
@@ -182,9 +188,71 @@
                     "null"
                   ],
                   "description": "Per-file error code, null on success."
+                },
+                "offset": {
+                  "type": "integer",
+                  "description": "Actual starting byte offset.",
+                  "minimum": 0,
+                  "maximum": 9007199254740991
+                },
+                "next_offset": {
+                  "type": [
+                    "integer",
+                    "null"
+                  ],
+                  "description": "Next byte offset after emitted content, or null at EOF.",
+                  "minimum": 0,
+                  "maximum": 9007199254740991
+                },
+                "mtime": {
+                  "type": [
+                    "string",
+                    "null"
+                  ],
+                  "description": "ISO modification time from the same opened file descriptor.",
+                  "format": "date-time"
+                },
+                "sha256": {
+                  "type": [
+                    "string",
+                    "null"
+                  ],
+                  "description": "Whole-file SHA-256 of original bytes only for complete offset-zero reads; otherwise null.",
+                  "pattern": "^[0-9a-f]{64}$"
                 }
               }
             }
+          },
+          "offset": {
+            "type": "integer",
+            "description": "Actual starting byte offset.",
+            "minimum": 0,
+            "maximum": 9007199254740991
+          },
+          "next_offset": {
+            "type": [
+              "integer",
+              "null"
+            ],
+            "description": "Next byte offset after emitted content, or null at EOF.",
+            "minimum": 0,
+            "maximum": 9007199254740991
+          },
+          "mtime": {
+            "type": [
+              "string",
+              "null"
+            ],
+            "description": "ISO modification time from the same opened file descriptor.",
+            "format": "date-time"
+          },
+          "sha256": {
+            "type": [
+              "string",
+              "null"
+            ],
+            "description": "Whole-file SHA-256 of original bytes only for complete offset-zero reads; otherwise null.",
+            "pattern": "^[0-9a-f]{64}$"
           }
         },
         "description": "Single-file payload (path mode) or per-file results (paths mode)."

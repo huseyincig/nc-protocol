@@ -1,7 +1,7 @@
 // Generated bindings — do not hand-edit.
 export const NC_AGENT_PROTOCOL_VERSION = '1.0.0';
-export const MCP_TOOL_CONTRACT_VERSION = '12.2.0';
-export const MCP_TOOL_MANIFEST_FINGERPRINT = 'sha256:0b5588e3d3275a4e0a2a05ce73546d25874d13ba3cadedad03167ec424006f62';
+export const MCP_TOOL_CONTRACT_VERSION = '12.3.0';
+export const MCP_TOOL_MANIFEST_FINGERPRINT = 'sha256:5233c3e3c173e9d9e1f97102772b55cc1e7ecdb43fbffaad22fdf19e5a32d8d0';
 export const HOST_POLICY_CONTRACT_VERSION = '1.0.0';
 export const MCP_TOOL_NAMES = Object.freeze([
   "client_list",

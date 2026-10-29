@@ -20,6 +20,13 @@
           "type": "string",
           "pattern": "^job_[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$"
         }
+      },
+      "offset": {
+        "type": "integer",
+        "description": "Global byte offset applied to each requested job. Follow differing next offsets with separate one-job calls.",
+        "minimum": 0,
+        "maximum": 9007199254740991,
+        "default": 0
       }
     }
   },
@@ -106,6 +113,21 @@
                     "null"
                   ],
                   "description": "JOB_NOT_FOUND, RESULT_NOT_FOUND or RESULT_EXPIRED on failed items."
+                },
+                "offset": {
+                  "type": "integer",
+                  "description": "Actual byte offset for this page.",
+                  "minimum": 0,
+                  "maximum": 9007199254740991
+                },
+                "next_offset": {
+                  "type": [
+                    "integer",
+                    "null"
+                  ],
+                  "description": "Next byte offset after aggregate-budget allocation, or null at EOF.",
+                  "minimum": 0,
+                  "maximum": 9007199254740991
                 }
               }
             }

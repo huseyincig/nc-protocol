@@ -148,12 +148,12 @@
         "if": {
           "properties": {
             "action": {
-              "enum": [
-                "stop",
-                "read"
-              ]
+              "const": "stop"
             }
-          }
+          },
+          "required": [
+            "action"
+          ]
         },
         "then": {
           "required": [
@@ -177,22 +177,16 @@
         "if": {
           "properties": {
             "action": {
-              "const": "input"
-            }
-          }
-        },
-        "then": {
-          "properties": {
-            "data": {
-              "type": "string",
-              "description": "Stdin payload to deliver to the process for action=input.",
-              "minLength": 1,
-              "maxLength": 65536
+              "const": "read"
             }
           },
           "required": [
-            "client_id",
-            "data"
+            "action"
+          ]
+        },
+        "then": {
+          "required": [
+            "client_id"
           ],
           "anyOf": [
             {
@@ -204,6 +198,93 @@
               "required": [
                 "handle"
               ]
+            }
+          ],
+          "properties": {
+            "stdout_cursor": {
+              "type": "integer",
+              "description": "Independent stdout byte cursor; overrides only stdout offset.",
+              "minimum": 0,
+              "maximum": 9007199254740991
+            },
+            "stderr_cursor": {
+              "type": "integer",
+              "description": "Independent stderr byte cursor; overrides only stderr offset.",
+              "minimum": 0,
+              "maximum": 9007199254740991
+            }
+          }
+        }
+      },
+      {
+        "if": {
+          "properties": {
+            "action": {
+              "const": "input"
+            }
+          }
+        },
+        "then": {
+          "properties": {
+            "data": {
+              "type": "string",
+              "description": "Stdin payload to deliver to the process for action=input.",
+              "minLength": 0,
+              "maxLength": 65536
+            },
+            "eof": {
+              "type": "boolean",
+              "description": "Close managed stdin after any data. true requires negotiated process_stdin_eof_v1 on the live WebSocket; omitted/false preserves ordinary input.",
+              "default": false
+            }
+          },
+          "required": [
+            "client_id"
+          ],
+          "anyOf": [
+            {
+              "required": [
+                "pid",
+                "data"
+              ],
+              "properties": {
+                "data": {
+                  "minLength": 1
+                }
+              }
+            },
+            {
+              "required": [
+                "pid",
+                "eof"
+              ],
+              "properties": {
+                "eof": {
+                  "const": true
+                }
+              }
+            },
+            {
+              "required": [
+                "handle",
+                "data"
+              ],
+              "properties": {
+                "data": {
+                  "minLength": 1
+                }
+              }
+            },
+            {
+              "required": [
+                "handle",
+                "eof"
+              ],
+              "properties": {
+                "eof": {
+                  "const": true
+                }
+              }
             }
           ]
         }
@@ -301,6 +382,40 @@
             },
             "state": {
               "type": "string"
+            },
+            "ppid": {
+              "type": [
+                "integer",
+                "null"
+              ],
+              "description": "OS-reported parent PID, or null when unavailable.",
+              "minimum": 0,
+              "maximum": 9007199254740991
+            },
+            "elapsed": {
+              "type": [
+                "string",
+                "null"
+              ],
+              "description": "OS-reported elapsed process time, not a new start-time probe.",
+              "maxLength": 128
+            },
+            "cpu_percent": {
+              "type": [
+                "number",
+                "null"
+              ],
+              "description": "OS process-table CPU percentage; not instantaneous sampling.",
+              "minimum": 0
+            },
+            "mem_percent": {
+              "type": [
+                "number",
+                "null"
+              ],
+              "description": "OS-reported memory percentage, or null when unavailable.",
+              "minimum": 0,
+              "maximum": 100
             }
           },
           "required": [
@@ -436,6 +551,55 @@
         "items": {
           "type": "string"
         }
+      },
+      "stdout": {
+        "type": [
+          "string",
+          "null"
+        ],
+        "description": "Bounded stdout window; content remains its historical alias."
+      },
+      "stderr": {
+        "type": [
+          "string",
+          "null"
+        ],
+        "description": "Independent bounded stderr window; null when unavailable on an older agent."
+      },
+      "stdout_cursor": {
+        "type": [
+          "integer",
+          "null"
+        ],
+        "description": "Next stdout byte cursor; cursor remains its historical alias.",
+        "minimum": 0,
+        "maximum": 9007199254740991
+      },
+      "stderr_cursor": {
+        "type": [
+          "integer",
+          "null"
+        ],
+        "description": "Next stderr byte cursor.",
+        "minimum": 0,
+        "maximum": 9007199254740991
+      },
+      "exit_code": {
+        "type": [
+          "integer",
+          "null"
+        ],
+        "description": "Child exit code, not the read operation outcome; null while running or unavailable.",
+        "minimum": -9007199254740991,
+        "maximum": 9007199254740991
+      },
+      "signal": {
+        "type": [
+          "string",
+          "null"
+        ],
+        "description": "Actual child termination signal, or null.",
+        "maxLength": 128
       }
     },
     "required": [

@@ -91,8 +91,7 @@
             },
             "create_parents": {
               "type": "boolean",
-              "default": false,
-              "description": "Create missing parent directories as needed."
+              "description": "Explicit false does not create parents; omitted preserves legacy automatic provisioning. Omission is not an injected true and does not add directory_manage authority."
             }
           },
           "required": [
@@ -298,8 +297,7 @@
             },
             "parents": {
               "type": "boolean",
-              "default": false,
-              "description": "Create missing parent directories as needed."
+              "description": "Create parent directories when true; false is nonrecursive. Omitted preserves legacy true behavior without injecting a default into the request."
             }
           }
         }

@@ -26,8 +26,7 @@
       },
       "parents": {
         "type": "boolean",
-        "default": false,
-        "description": "Create missing parent directories as needed."
+        "description": "Create parent directories when true; false is nonrecursive. Omitted preserves legacy true behavior without injecting a default into the request."
       }
     }
   },

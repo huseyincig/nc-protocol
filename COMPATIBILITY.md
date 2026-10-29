@@ -4,7 +4,7 @@ Current generation:
 
 ```text
 agent protocol:  1.0.0
-MCP contract:    12.1.0 (52 authoring definitions, fingerprint in mcp/fingerprint)
+MCP contract:    12.3.0 (52 authoring definitions, fingerprint in mcp/fingerprint)
 host policy:     1.0.0 (22 capabilities, see policy/capability-names)
 ```
 

@@ -1,7 +1,7 @@
 {
   "name": "log_stream",
   "title": "Stream Logs",
-  "description": "Stream logs through a stateful host-bound handle. action=start requires client_id and source; an allowed path overrides the selected file but does not remove the source requirement. max_lines defaults to 200. action=read and action=stop require handle and accept an optional client_id routing hint; the handle alone is sufficient. Read accepts cursor/limit, but the current agent uses a 65536-byte window per poll rather than enforcing limit. For one-shot or past-log reads use nc_log_query. Async: poll nc_job_get with the returned job_id; fetch offloaded output with nc_result_fetch. Start once, read, then stop; an invalid or expired handle requires a fresh start.",
+  "description": "Stream logs through a stateful host-bound handle. action=start requires client_id and either a named source or an authorized path. Named-source calls remain supported; an authorized path overrides the selected file, and a supplied source must still be valid. max_lines defaults to 200. action=read and action=stop require handle and accept an optional client_id routing hint; the handle alone is sufficient. Read accepts cursor/limit, but the current agent uses a 65536-byte window per poll rather than enforcing limit. For one-shot or past-log reads use nc_log_query. Async: poll nc_job_get with the returned job_id; fetch offloaded output with nc_result_fetch. Start once, read, then stop; an invalid or expired handle requires a fresh start.",
   "icons": [
     {
       "src": "https://nodecommand.app/icons/log_stream.svg",
@@ -90,8 +90,19 @@
             }
           },
           "required": [
-            "client_id",
-            "source"
+            "client_id"
+          ],
+          "anyOf": [
+            {
+              "required": [
+                "source"
+              ]
+            },
+            {
+              "required": [
+                "path"
+              ]
+            }
           ]
         }
       },
